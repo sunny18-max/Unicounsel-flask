@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - UniCounsel{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-card border-r border-border fixed h-screen overflow-y-auto transition-transform lg:translate-x-0">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-primary mb-8">
+                <i class="fas fa-graduation-cap mr-2"></i>UniCounsel
+            </h1>
+            
+            <nav class="space-y-2">
+                <a href="/dashboard" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors {% if request.path == '/dashboard' %}bg-primary/20 text-primary{% endif %}">
+                    <i class="fas fa-home w-5 mr-3"></i>
+                    <span>Overview</span>
+                </a>
+                
+                <a href="/favorites" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                    <i class="fas fa-heart w-5 mr-3"></i>
+                    <span>My Favorites</span>
+                </a>
+                
+                <a href="/perfect-matches" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                    <i class="fas fa-star w-5 mr-3"></i>
+                    <span>Perfect Matches</span>
+                </a>
+                
+                <div class="pt-4 mt-4 border-t border-border">
+                    <p class="text-xs text-muted uppercase mb-2 px-4">Tools</p>
+                    
+                    <a href="/fee-comparison" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-dollar-sign w-5 mr-3"></i>
+                        <span>Fee Comparison</span>
+                    </a>
+                    
+                    <a href="/visa-probability" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-file-check w-5 mr-3"></i>
+                        <span>Visa Probability</span>
+                    </a>
+                    
+                    <a href="/location-explorer" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-map-marker-alt w-5 mr-3"></i>
+                        <span>Location Explorer</span>
+                    </a>
+                    
+                    <a href="/cost-calculator" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-calculator w-5 mr-3"></i>
+                        <span>Cost Calculator</span>
+                    </a>
+                    
+                    <a href="/scholarships" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-award w-5 mr-3"></i>
+                        <span>Scholarship Finder</span>
+                    </a>
+                    
+                    <a href="/accommodation" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-home w-5 mr-3"></i>
+                        <span>Accommodation</span>
+                    </a>
+                    
+                    <a href="/job-market" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-briefcase w-5 mr-3"></i>
+                        <span>Job Market</span>
+                    </a>
+                    
+                    <a href="/career-roadmap" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-map w-5 mr-3"></i>
+                        <span>Career Roadmap</span>
+                    </a>
+                    
+                    <a href="/visa-checklist" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-list-check w-5 mr-3"></i>
+                        <span>Visa Checklist</span>
+                    </a>
+                    
+                    <a href="/safety-score" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-shield-alt w-5 mr-3"></i>
+                        <span>Safety & Insights</span>
+                    </a>
+                    
+                    <a href="/ai-mentor" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-robot w-5 mr-3"></i>
+                        <span>AI Mentor</span>
+                    </a>
+                    
+                    <a href="/interview-trainer" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-video w-5 mr-3"></i>
+                        <span>Interview Trainer</span>
+                    </a>
+                    
+                    <a href="/resume-builder" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-file-alt w-5 mr-3"></i>
+                        <span>Resume Builder</span>
+                    </a>
+                </div>
+                
+                <div class="pt-4 mt-4 border-t border-border">
+                    <a href="/profile" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-user w-5 mr-3"></i>
+                        <span>Profile</span>
+                    </a>
+                    
+                    <a href="/settings" class="flex items-center px-4 py-3 rounded-lg hover:bg-primary/10 text-text transition-colors">
+                        <i class="fas fa-cog w-5 mr-3"></i>
+                        <span>Settings</span>
+                    </a>
+                    
+                    <a href="/logout" class="flex items-center px-4 py-3 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors">
+                        <i class="fas fa-sign-out-alt w-5 mr-3"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="flex-1 lg:ml-64 p-8">
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 bg-card p-3 rounded-lg border border-border">
+            <i class="fas fa-bars text-primary"></i>
+        </button>
+        
+        {% block dashboard_content %}
+        <!-- Dashboard Overview -->
+        <div class="space-y-8">
+            <!-- Header -->
+            <div>
+                <h1 class="text-4xl font-bold mb-2">
+                    Welcome back, {{ user.username|title if user else 'Student' }}!
+                </h1>
+                <p class="text-muted">
+                    <span id="total-matches-text">Loading your university matches...</span>
+                </p>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card glow-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-muted text-sm font-medium">Total Matches</h3>
+                        <i class="fas fa-university text-primary text-xl"></i>
+                    </div>
+                    <p class="text-3xl font-bold" id="stat-total-matches">...</p>
+                    <p class="text-xs text-muted mt-2">Universities</p>
+                </div>
+                
+                <div class="card glow-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-muted text-sm font-medium">Top Matches</h3>
+                        <i class="fas fa-star text-yellow-500 text-xl"></i>
+                    </div>
+                    <p class="text-3xl font-bold" id="stat-top-matches">...</p>
+                    <p class="text-xs text-muted mt-2">80%+ Match Score</p>
+                </div>
+                
+                <div class="card glow-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-muted text-sm font-medium">Favorites</h3>
+                        <i class="fas fa-heart text-red-500 text-xl"></i>
+                    </div>
+                    <p class="text-3xl font-bold" id="stat-favorites">...</p>
+                    <p class="text-xs text-muted mt-2">Saved</p>
+                </div>
+                
+                <div class="card glow-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-muted text-sm font-medium">Shortlisted</h3>
+                        <i class="fas fa-list text-green-500 text-xl"></i>
+                    </div>
+                    <p class="text-3xl font-bold" id="stat-shortlisted">...</p>
+                    <p class="text-xs text-muted mt-2">Ready to Apply</p>
+                </div>
+            </div>
+            
+            <!-- Top 5 Matches -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold">Your Top Matches</h2>
+                    <a href="/perfect-matches" class="btn-primary text-sm">
+                        View All <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+                
+                <div id="top-matches-container" class="space-y-4">
+                    <!-- Loading state -->
+                    <div class="text-center py-12">
+                        <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+                        <p class="text-muted">Loading your top matches...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6">Quick Actions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a href="/cost-calculator" class="card hover:glow-border transition-all cursor-pointer">
+                        <i class="fas fa-calculator text-primary text-3xl mb-3"></i>
+                        <h3 class="font-semibold mb-2">Calculate Costs</h3>
+                        <p class="text-sm text-muted">Estimate your study abroad expenses</p>
+                    </a>
+                    
+                    <a href="/scholarships" class="card hover:glow-border transition-all cursor-pointer">
+                        <i class="fas fa-award text-yellow-500 text-3xl mb-3"></i>
+                        <h3 class="font-semibold mb-2">Find Scholarships</h3>
+                        <p class="text-sm text-muted">Discover funding opportunities</p>
+                    </a>
+                    
+                    <a href="/visa-probability" class="card hover:glow-border transition-all cursor-pointer">
+                        <i class="fas fa-passport text-green-500 text-3xl mb-3"></i>
+                        <h3 class="font-semibold mb-2">Check Visa Chances</h3>
+                        <p class="text-sm text-muted">Assess your visa probability</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </main>
+</div>
+
+<script>
+    // Mobile menu toggle
+    document.getElementById('mobile-menu-btn')?.addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('-translate-x-full');
+    });
+    
+    // Load dashboard stats
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/api/dashboard/stats');
+            const data = await response.json();
+            
+            // Update stats (check if elements exist first)
+            const statTotalMatches = document.getElementById('stat-total-matches');
+            const statTopMatches = document.getElementById('stat-top-matches');
+            const statFavorites = document.getElementById('stat-favorites');
+            const statShortlisted = document.getElementById('stat-shortlisted');
+            const totalMatchesText = document.getElementById('total-matches-text');
+            const container = document.getElementById('top-matches-container');
+            
+            if (statTotalMatches) statTotalMatches.textContent = data.total_matches || 0;
+            if (statTopMatches) statTopMatches.textContent = data.top_matches || 0;
+            if (statFavorites) statFavorites.textContent = data.favorites || 0;
+            if (statShortlisted) statShortlisted.textContent = data.shortlisted || 0;
+            
+            // Update header text
+            if (totalMatchesText) {
+                const totalText = data.total_matches > 0 
+                    ? `You have ${data.total_matches} university matches based on your profile`
+                    : 'Complete your onboarding to see personalized matches';
+                totalMatchesText.textContent = totalText;
+            }
+            
+            // Render top matches
+            if (!container) return;
+            if (data.top_5_matches && data.top_5_matches.length > 0) {
+                container.innerHTML = data.top_5_matches.map(match => `
+                    <div class="card glow-border flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <h3 class="text-xl font-semibold mr-3">${match.name}</h3>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                                    match.match_score >= 90 ? 'bg-green-500/20 text-green-500' :
+                                    match.match_score >= 80 ? 'bg-blue-500/20 text-blue-500' :
+                                    match.match_score >= 70 ? 'bg-yellow-500/20 text-yellow-500' :
+                                    'bg-gray-500/20 text-gray-500'
+                                }">
+                                    ${match.match_score}% Match
+                                </span>
+                            </div>
+                            <div class="flex items-center text-sm text-muted mb-2">
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                <span>${match.city}, ${match.country}</span>
+                            </div>
+                            <p class="text-sm text-muted">${match.match_reason}</p>
+                            <div class="flex items-center mt-3 text-sm">
+                                <span class="text-primary font-semibold">
+                                    $${match.total_cost ? match.total_cost.toLocaleString() : 'N/A'} /year
+                                </span>
+                                ${match.scholarships ? '<span class="ml-4 text-yellow-500"><i class="fas fa-award mr-1"></i>Scholarships Available</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="mt-4 md:mt-0 md:ml-4 flex items-center space-x-3">
+                            <button onclick="toggleFavorite('${match.id}')" class="p-3 rounded-lg border border-border hover:bg-primary/10 transition-colors">
+                                <i class="fas fa-heart ${match.is_favorite ? 'text-red-500' : ''}"></i>
+                            </button>
+                            ${match.website ? `<a href="${match.website}" target="_blank" class="btn-primary text-sm">Visit Website</a>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-university text-4xl text-muted mb-4"></i>
+                        <p class="text-muted">No matches found. Complete your onboarding to get personalized recommendations.</p>
+                        <a href="/onboarding" class="btn-primary mt-4 inline-block">Start Onboarding</a>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+            document.getElementById('top-matches-container').innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                    <p class="text-muted">Failed to load matches. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+async function toggleFavorite(universityId) {
+    try {
+        console.log('Toggling favorite for university ID:', universityId);
+        const url = `/api/matches/${universityId}/favorite`;
+        console.log('Calling URL:', url);
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reload dashboard stats to update the UI
+            loadDashboardStats();
+            
+            // Show feedback
+            const message = data.is_favorite ? 'Added to favorites!' : 'Removed from favorites';
+            showToast(message, 'success');
+        } else {
+            showToast('Failed to update favorite', 'error');
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        showToast('Error updating favorite', 'error');
+    }
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Load stats on page load
+loadDashboardStats();
+</script>
+{% endblock %}
+

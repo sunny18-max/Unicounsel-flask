@@ -1,0 +1,350 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Perfect Matches - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-bold mb-2">Your Perfect Matches</h1>
+        <p class="text-muted">Universities matched to your profile and preferences</p>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Country</label>
+                <select id="filter-country" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-white" style="background-color: #1a1f35; color: #ffffff;">
+                    <option value="" style="background-color: #1a1f35; color: #ffffff;">All Countries</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">Min Budget</label>
+                <input type="number" id="filter-budget-min" placeholder="Min Budget" 
+                       class="w-full bg-background border border-border rounded-lg px-4 py-2 text-white" style="background-color: #1a1f35; color: #ffffff;" value="0">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">Max Budget</label>
+                <input type="number" id="filter-budget-max" placeholder="Max Budget" 
+                       class="w-full bg-background border border-border rounded-lg px-4 py-2 text-white" style="background-color: #1a1f35; color: #ffffff;" value="100000">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">Sort By</label>
+                <select id="filter-sort" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-white" style="background-color: #1a1f35; color: #ffffff;">
+                    <option value="match_score" style="background-color: #1a1f35; color: #ffffff;">Match Score</option>
+                    <option value="budget" style="background-color: #1a1f35; color: #ffffff;">Budget (Low to High)</option>
+                    <option value="name" style="background-color: #1a1f35; color: #ffffff;">Name (A-Z)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="mt-4 flex justify-between items-center">
+            <button id="apply-filters" class="btn-primary">
+                <i class="fas fa-filter mr-2"></i>Apply Filters
+            </button>
+            <button id="reset-filters" class="px-4 py-2 rounded-lg border border-border hover:bg-primary/10 transition-colors">
+                <i class="fas fa-redo mr-2"></i>Reset
+            </button>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="card">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold">
+                <span id="results-count">0</span> Universities Found
+            </h2>
+        </div>
+        
+        <div id="matches-container" class="space-y-4">
+            <!-- Loading state -->
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+                <p class="text-muted">Loading your matches...</p>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        <div id="pagination-container" class="mt-6 flex items-center justify-center space-x-2">
+            <!-- Pagination will be rendered here -->
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let currentFilters = {};
+
+// Populate dynamic filter options from server (CSV or DB)
+async function populateFilterOptions(){
+    try{
+        const res = await fetch('/api/filters');
+        const data = await res.json();
+        if(data.countries && data.countries.length){
+            const select = document.getElementById('filter-country');
+            // Clear existing (except first option)
+            select.querySelectorAll('option:not(:first-child)').forEach(o => o.remove());
+            data.countries.forEach(c =>{
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+        }
+        if(data.budget_min !== undefined){
+            document.getElementById('filter-budget-min').value = Math.floor(data.budget_min) || 0;
+        }
+        if(data.budget_max !== undefined){
+            document.getElementById('filter-budget-max').value = Math.ceil(data.budget_max) || 100000;
+        }
+    }catch(err){
+        console.error('Error loading filter options:', err);
+    }
+}
+
+async function loadMatches(page = 1) {
+    try {
+        const container = document.getElementById('matches-container');
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+                <p class="text-muted">Loading matches...</p>
+            </div>
+        `;
+        
+        // Build query string
+        const params = new URLSearchParams({
+            page: page,
+            ...currentFilters
+        });
+        
+        const response = await fetch(`/api/matches?${params}`);
+        const data = await response.json();
+        
+        // Update results count
+        document.getElementById('results-count').textContent = data.total || 0;
+        
+        // Render matches
+        if (data.matches && data.matches.length > 0) {
+            container.innerHTML = data.matches.map(match => `
+                <div class="card glow-border">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-3">
+                                <h3 class="text-2xl font-semibold mr-3">${match.name}</h3>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                                    match.match_score >= 90 ? 'bg-green-500/20 text-green-500' :
+                                    match.match_score >= 80 ? 'bg-blue-500/20 text-blue-500' :
+                                    match.match_score >= 70 ? 'bg-yellow-500/20 text-yellow-500' :
+                                    'bg-gray-500/20 text-gray-500'
+                                }">
+                                    ${match.match_score}% Match
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center text-sm text-muted mb-3">
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                <span>${match.city}, ${match.country}</span>
+                            </div>
+                            
+                            <p class="text-sm text-muted mb-4">${match.match_reason}</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <p class="text-muted mb-1">Tuition Fee</p>
+                                    <p class="font-semibold text-primary">
+                                        $${match.tuition_fee ? match.tuition_fee.toLocaleString() : 'N/A'} /year
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-muted mb-1">Living Cost</p>
+                                    <p class="font-semibold">
+                                        $${match.living_cost ? match.living_cost.toLocaleString() : 'N/A'} /year
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-muted mb-1">Total Estimated Cost</p>
+                                    <p class="font-semibold text-green-500">
+                                        $${match.total_cost ? match.total_cost.toLocaleString() : 'N/A'} /year
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            ${match.course ? `
+                            <div class="mt-4">
+                                <p class="text-xs text-muted mb-1">Course</p>
+                                <p class="text-sm">${match.course}</p>
+                            </div>
+                            ` : ''}
+                            
+                            ${match.scholarships ? `
+                            <div class="mt-3 flex items-center text-sm text-yellow-500">
+                                <i class="fas fa-award mr-2"></i>
+                                <span>Scholarships Available</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mt-4 md:mt-0 md:ml-6 flex flex-col space-y-3">
+                            <button onclick="toggleFavorite('${match.id}')" class="p-3 rounded-lg border border-border hover:bg-primary/10 transition-colors ${match.is_favorite ? 'text-red-500' : ''}">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                            ${match.website ? `
+                            <a href="${match.website}" target="_blank" class="btn-primary text-sm text-center">
+                                Visit Website
+                            </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Render pagination
+            renderPagination(data.page, data.pages);
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-university text-4xl text-muted mb-4"></i>
+                    <p class="text-muted mb-4">No matches found with current filters.</p>
+                    <button onclick="resetFilters()" class="btn-primary">Reset Filters</button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading matches:', error);
+        document.getElementById('matches-container').innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                <p class="text-muted">Failed to load matches. Please try refreshing the page.</p>
+            </div>
+        `;
+    }
+}
+
+function renderPagination(currentPage, totalPages) {
+    const container = document.getElementById('pagination-container');
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Previous button
+    html += `
+        <button onclick="loadMatches(${currentPage - 1})" 
+                ${currentPage === 1 ? 'disabled' : ''}
+                class="px-4 py-2 rounded-lg border border-border ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'}">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <button onclick="loadMatches(${i})" 
+                        class="px-4 py-2 rounded-lg ${i === currentPage ? 'bg-primary text-background' : 'border border-border hover:bg-primary/10'}">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += '<span class="px-2">...</span>';
+        }
+    }
+    
+    // Next button
+    html += `
+        <button onclick="loadMatches(${currentPage + 1})" 
+                ${currentPage === totalPages ? 'disabled' : ''}
+                class="px-4 py-2 rounded-lg border border-border ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'}">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    container.innerHTML = html;
+}
+
+async function toggleFavorite(universityId) {
+    try {
+        console.log('Toggling favorite for university ID:', universityId);
+        const url = `/api/matches/${universityId}/favorite`;
+        console.log('Calling URL:', url);
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reload matches to update the UI
+            loadMatches();
+            
+            // Show feedback
+            const message = data.is_favorite ? 'Added to favorites!' : 'Removed from favorites';
+            showToast(message, 'success');
+        } else {
+            showToast('Failed to update favorite', 'error');
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        showToast('Error updating favorite', 'error');
+    }
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function applyFilters() {
+    currentFilters = {
+        countries: document.getElementById('filter-country').value,
+        budget_min: document.getElementById('filter-budget-min').value,
+        budget_max: document.getElementById('filter-budget-max').value,
+        sort_by: document.getElementById('filter-sort').value
+    };
+    currentPage = 1;
+    loadMatches(1);
+}
+
+function resetFilters() {
+    document.getElementById('filter-country').value = '';
+    document.getElementById('filter-budget-min').value = '0';
+    document.getElementById('filter-budget-max').value = '100000';
+    document.getElementById('filter-sort').value = 'match_score';
+    currentFilters = {};
+    loadMatches(1);
+}
+
+// Event listeners
+document.getElementById('apply-filters').addEventListener('click', applyFilters);
+document.getElementById('reset-filters').addEventListener('click', resetFilters);
+
+// Load initial data
+populateFilterOptions().then(()=> loadMatches(1));
+</script>
+{% endblock %}

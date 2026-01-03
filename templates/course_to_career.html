@@ -1,0 +1,390 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Career Roadmap - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<style>
+    .roadmap-container { position: relative; padding: 2rem 0; }
+    .roadmap-item { position: relative; padding: 2rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 12px; margin-bottom: 2rem; transition: all 0.3s; }
+    .roadmap-item:hover { transform: translateX(10px); box-shadow: 0 12px 24px rgba(100, 200, 255, 0.15); }
+    .roadmap-item::before { content: ''; position: absolute; left: -40px; top: 40px; width: 35px; height: 2px; background: linear-gradient(90deg, #64c8ff, transparent); }
+    .roadmap-item:first-child::before { display: none; }
+    .roadmap-number { position: absolute; left: -60px; top: 25px; width: 40px; height: 40px; background: linear-gradient(135deg, #64c8ff, #34d399); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #1a1f35; font-size: 1.2rem; }
+    .roadmap-content h3 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; background: linear-gradient(135deg, #64c8ff, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .roadmap-content p { color: #999; margin-bottom: 1rem; }
+    .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
+    .skill-tag { padding: 0.5rem 1rem; background: rgba(100, 200, 255, 0.1); border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 20px; font-size: 0.875rem; text-align: center; }
+    .action-button { display: inline-block; padding: 0.75rem 1.5rem; background: rgba(100, 200, 255, 0.2); border: 1px solid #64c8ff; border-radius: 6px; color: #64c8ff; cursor: pointer; transition: all 0.3s; margin-top: 1rem; margin-right: 0.5rem; }
+    .action-button:hover { background: rgba(100, 200, 255, 0.3); }
+    .timeline-vertical { position: relative; padding-left: 40px; }
+    .timeline-vertical::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, #64c8ff, transparent); }
+    .timeline-marker { position: absolute; left: -5px; width: 20px; height: 20px; background: #1a1f35; border: 3px solid #64c8ff; border-radius: 50%; }
+    .milestone-card { padding: 1.5rem; background: rgba(100, 200, 255, 0.05); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 8px; margin-bottom: 1.5rem; }
+    .milestone-title { font-weight: bold; color: #64c8ff; margin-bottom: 0.5rem; }
+    .pathway-card { padding: 2rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.08), rgba(52, 211, 153, 0.04)); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 12px; transition: all 0.3s; }
+    .pathway-card:hover { transform: scale(1.05); box-shadow: 0 16px 32px rgba(100, 200, 255, 0.2); }
+    .pathway-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .career-match { padding: 1rem; background: rgba(52, 211, 153, 0.1); border-left: 4px solid #34d399; border-radius: 6px; margin-bottom: 1rem; }
+    .match-score { display: inline-block; padding: 0.25rem 0.75rem; background: rgba(52, 211, 153, 0.2); color: #34d399; border-radius: 12px; font-size: 0.875rem; font-weight: bold; }
+</style>
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">
+            <i class="fas fa-road mr-3 text-primary"></i>Your Career Roadmap
+        </h1>
+        <p class="text-muted">Personalized career pathway from your course to your dream job</p>
+    </div>
+    
+    <!-- Career Selection -->
+    <div class="card">
+        <h2 class="text-xl font-bold mb-4">Select Your Career Interest</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Field of Study</label>
+                <select id="fieldSelect" class="w-full border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+                    <option value="">Select a field...</option>
+                    <option value="computer_science">Computer Science</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="business">Business & Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="data_science">Data Science</option>
+                    <option value="design">Design & UX</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Career Goal</label>
+                <select id="careerSelect" class="w-full border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;" disabled>
+                    <option value="">Select a career...</option>
+                </select>
+            </div>
+        </div>
+        <button id="loadRoadmapBtn" class="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-all" disabled>
+            <i class="fas fa-chart-line mr-2"></i>Generate Roadmap
+        </button>
+    </div>
+    
+    <!-- Career Roadmap Section (Hidden by default) -->
+    <div id="roadmapSection" style="display: none;" class="space-y-8">
+        
+        <!-- Career Match & Overview -->
+        <div class="card">
+            <h2 class="text-xl font-bold mb-4">
+                <i class="fas fa-target mr-2"></i>Career Match Analysis
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="career-match">
+                    <div class="text-sm text-muted mb-2">Overall Match</div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold">85%</span>
+                        <span class="match-score">Strong Fit</span>
+                    </div>
+                </div>
+                <div class="career-match">
+                    <div class="text-sm text-muted mb-2">Market Demand</div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold">Very High</span>
+                        <i class="fas fa-arrow-trend-up text-green-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="career-match">
+                    <div class="text-sm text-muted mb-2">Salary Potential</div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold">$95K+</span>
+                        <i class="fas fa-dollar-sign text-yellow-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline Roadmap -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-timeline mr-2"></i>Career Development Timeline
+            </h2>
+            <div class="relative">
+                <!-- Year 1 -->
+                <div class="roadmap-item">
+                    <div class="roadmap-number">1</div>
+                    <div class="roadmap-content">
+                        <h3>Foundation Year (Year 1-2)</h3>
+                        <p>Master fundamentals and build strong core skills</p>
+                        <div class="skills-grid">
+                            <div class="skill-tag">Fundamentals</div>
+                            <div class="skill-tag">Problem Solving</div>
+                            <div class="skill-tag">Communication</div>
+                            <div class="skill-tag">Time Management</div>
+                        </div>
+                        <button class="action-button"><i class="fas fa-book mr-1"></i>View Courses</button>
+                        <button class="action-button"><i class="fas fa-dumbbell mr-1"></i>Start Skills</button>
+                    </div>
+                </div>
+                
+                <!-- Year 2 -->
+                <div class="roadmap-item">
+                    <div class="roadmap-number">2</div>
+                    <div class="roadmap-content">
+                        <h3>Growth Year (Year 2-3)</h3>
+                        <p>Develop specialized skills and gain practical experience</p>
+                        <div class="skills-grid">
+                            <div class="skill-tag">Specialization</div>
+                            <div class="skill-tag">Leadership</div>
+                            <div class="skill-tag">Project Mgmt</div>
+                            <div class="skill-tag">Industry Tools</div>
+                        </div>
+                        <button class="action-button"><i class="fas fa-briefcase mr-1"></i>Find Internships</button>
+                        <button class="action-button"><i class="fas fa-certificate mr-1"></i>Get Certified</button>
+                    </div>
+                </div>
+                
+                <!-- Year 3 -->
+                <div class="roadmap-item">
+                    <div class="roadmap-number">3</div>
+                    <div class="roadmap-content">
+                        <h3>Expert Year (Year 3-4)</h3>
+                        <p>Build portfolio and establish professional network</p>
+                        <div class="skills-grid">
+                            <div class="skill-tag">Advanced Skills</div>
+                            <div class="skill-tag">Networking</div>
+                            <div class="skill-tag">Portfolio</div>
+                            <div class="skill-tag">Mentorship</div>
+                        </div>
+                        <button class="action-button"><i class="fas fa-people-group mr-1"></i>Network Events</button>
+                        <button class="action-button"><i class="fas fa-github mr-1"></i>Build Portfolio</button>
+                    </div>
+                </div>
+                
+                <!-- Post-Graduation -->
+                <div class="roadmap-item">
+                    <div class="roadmap-number">4</div>
+                    <div class="roadmap-content">
+                        <h3>Career Launch (Year 4+)</h3>
+                        <p>Enter the job market and advance your career</p>
+                        <div class="skills-grid">
+                            <div class="skill-tag">Job Search</div>
+                            <div class="skill-tag">Interviews</div>
+                            <div class="skill-tag">Negotiation</div>
+                            <div class="skill-tag">Continuous Growth</div>
+                        </div>
+                        <button class="action-button"><i class="fas fa-briefcase mr-1"></i>Job Search</button>
+                        <button class="action-button"><i class="fas fa-handshake mr-1"></i>Apply Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Career Pathways -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-fork mr-2"></i>Career Pathways
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Management Track -->
+                <div class="pathway-card">
+                    <div class="pathway-icon"><i class="fas fa-crown text-primary"></i></div>
+                    <h3 class="font-bold text-primary mb-3">Management Track</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-start">
+                            <i class="fas fa-check text-green-400 mr-2 mt-0.5"></i>
+                            <span>Individual Contributor</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Team Lead</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Manager</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Director</span>
+                        </div>
+                    </div>
+                    <button class="w-full mt-4 px-4 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-all">
+                        <i class="fas fa-arrow-right mr-2"></i>Explore Path
+                    </button>
+                </div>
+                
+                <!-- Specialist Track -->
+                <div class="pathway-card">
+                    <div class="pathway-icon"><i class="fas fa-flask text-primary"></i></div>
+                    <h3 class="font-bold text-primary mb-3">Specialist Track</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-start">
+                            <i class="fas fa-check text-green-400 mr-2 mt-0.5"></i>
+                            <span>Junior Expert</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Senior Expert</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Principal</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Architect</span>
+                        </div>
+                    </div>
+                    <button class="w-full mt-4 px-4 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-all">
+                        <i class="fas fa-arrow-right mr-2"></i>Explore Path
+                    </button>
+                </div>
+                
+                <!-- Entrepreneurship Track -->
+                <div class="pathway-card">
+                    <div class="pathway-icon"><i class="fas fa-rocket text-primary"></i></div>
+                    <h3 class="font-bold text-primary mb-3">Entrepreneurship</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-start">
+                            <i class="fas fa-check text-green-400 mr-2 mt-0.5"></i>
+                            <span>Side Project</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Startup</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>Founder</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-muted mr-2 mt-0.5"></i>
+                            <span>CEO</span>
+                        </div>
+                    </div>
+                    <button class="w-full mt-4 px-4 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-all">
+                        <i class="fas fa-arrow-right mr-2"></i>Explore Path
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resources & Action Items -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-tasks mr-2"></i>Recommended Actions
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="milestone-card">
+                    <div class="milestone-title"><i class="fas fa-book mr-2"></i>Learn New Skills</div>
+                    <p class="text-sm text-muted mb-3">Enroll in relevant courses to build expertise</p>
+                    <button class="text-primary hover:text-primary/80 text-sm">Browse Courses →</button>
+                </div>
+                <div class="milestone-card">
+                    <div class="milestone-title"><i class="fas fa-briefcase mr-2"></i>Find Internships</div>
+                    <p class="text-sm text-muted mb-3">Gain practical experience in your field</p>
+                    <button class="text-primary hover:text-primary/80 text-sm">Search Opportunities →</button>
+                </div>
+                <div class="milestone-card">
+                    <div class="milestone-title"><i class="fas fa-certificate mr-2"></i>Get Certifications</div>
+                    <p class="text-sm text-muted mb-3">Earn industry-recognized credentials</p>
+                    <button class="text-primary hover:text-primary/80 text-sm">View Certifications →</button>
+                </div>
+                <div class="milestone-card">
+                    <div class="milestone-title"><i class="fas fa-network-wired mr-2"></i>Network & Connect</div>
+                    <p class="text-sm text-muted mb-3">Build professional relationships</p>
+                    <button class="text-primary hover:text-primary/80 text-sm">Find Events →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const careerData = {
+        computer_science: {
+            label: 'Computer Science',
+            careers: [
+                { id: 'software_engineer', name: 'Software Engineer' },
+                { id: 'data_scientist', name: 'Data Scientist' },
+                { id: 'ml_engineer', name: 'Machine Learning Engineer' },
+                { id: 'devops', name: 'DevOps Engineer' },
+                { id: 'security', name: 'Security Engineer' }
+            ]
+        },
+        engineering: {
+            label: 'Engineering',
+            careers: [
+                { id: 'civil_eng', name: 'Civil Engineer' },
+                { id: 'mech_eng', name: 'Mechanical Engineer' },
+                { id: 'elec_eng', name: 'Electrical Engineer' },
+                { id: 'soft_eng', name: 'Software Engineer' },
+                { id: 'bio_eng', name: 'Biomedical Engineer' }
+            ]
+        },
+        business: {
+            label: 'Business & Finance',
+            careers: [
+                { id: 'financial_analyst', name: 'Financial Analyst' },
+                { id: 'business_analyst', name: 'Business Analyst' },
+                { id: 'pm', name: 'Product Manager' },
+                { id: 'consultant', name: 'Business Consultant' },
+                { id: 'investment', name: 'Investment Banker' }
+            ]
+        },
+        healthcare: {
+            label: 'Healthcare',
+            careers: [
+                { id: 'nurse', name: 'Registered Nurse' },
+                { id: 'doctor', name: 'Medical Doctor' },
+                { id: 'therapist', name: 'Physical Therapist' },
+                { id: 'health_admin', name: 'Health Administrator' },
+                { id: 'researcher', name: 'Medical Researcher' }
+            ]
+        },
+        data_science: {
+            label: 'Data Science',
+            careers: [
+                { id: 'data_analyst', name: 'Data Analyst' },
+                { id: 'data_scientist', name: 'Data Scientist' },
+                { id: 'data_engineer', name: 'Data Engineer' },
+                { id: 'bi_analyst', name: 'BI Analyst' },
+                { id: 'analyst', name: 'Analytics Manager' }
+            ]
+        },
+        design: {
+            label: 'Design & UX',
+            careers: [
+                { id: 'ux_designer', name: 'UX Designer' },
+                { id: 'ui_designer', name: 'UI Designer' },
+                { id: 'product_designer', name: 'Product Designer' },
+                { id: 'ux_researcher', name: 'UX Researcher' },
+                { id: 'design_lead', name: 'Design Lead' }
+            ]
+        }
+    };
+    
+    // Update careers based on field selection
+    document.getElementById('fieldSelect').addEventListener('change', function() {
+        const field = this.value;
+        const careerSelect = document.getElementById('careerSelect');
+        careerSelect.innerHTML = '<option value="">Select a career...</option>';
+        
+        if (field && careerData[field]) {
+            careerData[field].careers.forEach(career => {
+                const opt = document.createElement('option');
+                opt.value = career.id;
+                opt.textContent = career.name;
+                careerSelect.appendChild(opt);
+            });
+            careerSelect.disabled = false;
+        } else {
+            careerSelect.disabled = true;
+        }
+        document.getElementById('loadRoadmapBtn').disabled = true;
+    });
+    
+    document.getElementById('careerSelect').addEventListener('change', function() {
+        document.getElementById('loadRoadmapBtn').disabled = !this.value;
+    });
+    
+    // Generate roadmap
+    document.getElementById('loadRoadmapBtn').addEventListener('click', function() {
+        document.getElementById('roadmapSection').style.display = 'block';
+        document.getElementById('roadmapSection').scrollIntoView({ behavior: 'smooth' });
+    });
+</script>
+{% endblock %}

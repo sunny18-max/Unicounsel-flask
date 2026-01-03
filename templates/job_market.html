@@ -1,0 +1,339 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Job Market Insights - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.css" />
+<style>
+    .job-card { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden; }
+    .job-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #64c8ff, #7dd3fc); }
+    .job-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 20px 40px rgba(100, 200, 255, 0.2); }
+    .job-title { font-size: 1.125rem; font-weight: bold; color: #fff; margin-bottom: 0.5rem; }
+    .salary-range { display: inline-block; padding: 0.5rem 1rem; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 20px; color: #1a1f35; font-weight: bold; font-size: 0.875rem; }
+    .demand-badge { display: inline-block; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem; }
+    .demand-very-high { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .demand-high { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+    .demand-medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .employer-tag { display: inline-block; padding: 0.375rem 0.75rem; background: rgba(100, 200, 255, 0.1); border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 20px; font-size: 0.875rem; margin-right: 0.5rem; margin-bottom: 0.5rem; }
+    .stat-card { padding: 2rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 12px; text-align: center; }
+    .stat-number { font-size: 2.5rem; font-weight: bold; background: linear-gradient(135deg, #64c8ff, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { color: #999; margin-top: 0.5rem; font-weight: 500; }
+    .growth-arrow { color: #34d399; font-weight: bold; }
+    .chart-container { position: relative; height: 350px; margin: 2rem 0; }
+    .filter-section { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+    .location-selector { padding: 1rem; background: rgba(100, 200, 255, 0.05); border: 2px solid rgba(100, 200, 255, 0.2); border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .location-selector.active { background: rgba(100, 200, 255, 0.15); border-color: #64c8ff; }
+    .location-selector:hover { border-color: #64c8ff; }
+    .skill-requirement { padding: 1rem; background: rgba(52, 211, 153, 0.05); border-left: 3px solid #34d399; border-radius: 6px; }
+    .growth-indicator { font-size: 1.5rem; font-weight: bold; color: #34d399; }
+</style>
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">
+            <i class="fas fa-briefcase mr-3 text-primary"></i>Job Market Intelligence
+        </h1>
+        <p class="text-muted">Real-time insights into job opportunities, salary trends, and career growth</p>
+    </div>
+    
+    <!-- Location Selection -->
+    <div class="card">
+        <h2 class="text-xl font-bold mb-4">Select Your Desired Location</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium mb-2">Country</label>
+                <select id="jobCountry" class="w-full border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+                    <option value="">-- Select Country --</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Ethiopia">Ethiopia</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">City</label>
+                <select id="jobCity" class="w-full border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;" disabled>
+                    <option value="">-- Select City --</option>
+                </select>
+            </div>
+        </div>
+        <button id="loadJobsBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-all" disabled>
+            <i class="fas fa-search mr-2"></i>Explore Jobs
+        </button>
+    </div>
+    
+    <!-- Job Market Overview (Hidden by default) -->
+    <div id="jobMarketSection" style="display: none; " class="space-y-8">
+        
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="stat-card">
+                <div class="stat-number" id="avgSalary">$0</div>
+                <div class="stat-label">Average Salary</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number growth-indicator" id="jobGrowth">+0%</div>
+                <div class="stat-label">Job Growth Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="unemploymentRate">0%</div>
+                <div class="stat-label">Unemployment Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="topEmployersCount">0</div>
+                <div class="stat-label">Top Employers</div>
+            </div>
+        </div>
+        
+        <!-- Top Employers -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-star mr-2"></i>Top Employers Hiring
+            </h2>
+            <div id="topEmployers" class="flex flex-wrap gap-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <!-- In-Demand Jobs Grid -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-fire mr-2"></i>In-Demand Job Roles
+            </h2>
+            <div id="jobsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <!-- Job Distribution Chart -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-chart-bar mr-2"></i>Salary Distribution by Role
+            </h2>
+            <div class="chart-container">
+                <canvas id="salaryChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Skills in Demand -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-code mr-2"></i>Most Demanded Skills
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="skill-requirement">
+                    <h3 class="font-bold text-primary mb-2">Technical Skills</h3>
+                    <div class="text-sm text-muted">Python, JavaScript, SQL, Cloud (AWS/Azure), Docker, Kubernetes, React, Node.js</div>
+                </div>
+                <div class="skill-requirement">
+                    <h3 class="font-bold text-primary mb-2">Business Skills</h3>
+                    <div class="text-sm text-muted">Project Management, Data Analysis, Product Strategy, Market Research, Communication</div>
+                </div>
+                <div class="skill-requirement">
+                    <h3 class="font-bold text-primary mb-2">Soft Skills</h3>
+                    <div class="text-sm text-muted">Leadership, Problem-solving, Critical Thinking, Teamwork, Adaptability, Communication</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Career Path Recommendations -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-road mr-2"></i>Recommended Career Paths
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <h3 class="font-bold text-primary">Entry-Level Path (0-2 years)</h3>
+                    <div class="text-sm text-muted">Junior Developer → Mid-level Engineer → Senior Engineer</div>
+                    <div class="text-xs text-gray-500 mt-2">Focus: Build strong foundation, learn from mentors, gain practical experience</div>
+                </div>
+                <div class="space-y-3">
+                    <h3 class="font-bold text-primary">Advanced Path (2-5 years)</h3>
+                    <div class="text-sm text-muted">Senior Developer → Tech Lead → Engineering Manager</div>
+                    <div class="text-xs text-gray-500 mt-2">Focus: Leadership, mentoring, architectural decisions, strategic planning</div>
+                </div>
+                <div class="space-y-3">
+                    <h3 class="font-bold text-primary">Specialist Path</h3>
+                    <div class="text-sm text-muted">Expert Developer → Solutions Architect → Staff Engineer</div>
+                    <div class="text-xs text-gray-500 mt-2">Focus: Deep expertise, innovation, complex problem-solving, innovation</div>
+                </div>
+                <div class="space-y-3">
+                    <h3 class="font-bold text-primary">Business Path</h3>
+                    <div class="text-sm text-muted">Product Manager → Senior PM → Director of Product</div>
+                    <div class="text-xs text-gray-500 mt-2">Focus: Business acumen, user research, strategy, stakeholder management</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Networking & Resources -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-network-wired mr-2"></i>Networking & Resources
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-rgba(100, 200, 255, 0.05) border border-primary rounded-lg">
+                    <h3 class="font-bold text-primary mb-2"><i class="fas fa-people-group mr-2"></i>Professional Networks</h3>
+                    <ul class="text-sm text-muted space-y-1">
+                        <li>• LinkedIn - Build professional presence</li>
+                        <li>• Industry meetups and conferences</li>
+                        <li>• University alumni networks</li>
+                        <li>• Online communities (Reddit, Discord, Slack)</li>
+                    </ul>
+                </div>
+                <div class="p-4 bg-rgba(100, 200, 255, 0.05) border border-primary rounded-lg">
+                    <h3 class="font-bold text-primary mb-2"><i class="fas fa-graduation-cap mr-2"></i>Skill Development</h3>
+                    <ul class="text-sm text-muted space-y-1">
+                        <li>• Online courses (Coursera, Udemy, Pluralsight)</li>
+                        <li>• Certifications (AWS, Google Cloud, Azure)</li>
+                        <li>• Open source contributions</li>
+                        <li>• Personal projects & portfolio building</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+<script>
+    const citiesByCountry = {
+        'Australia': ['Melbourne', 'Sydney'],
+        'Ethiopia': ['Addis Ababa']
+    };
+    
+    let currentChart = null;
+    
+    // Update city selector based on country
+    document.getElementById('jobCountry').addEventListener('change', function() {
+        const country = this.value;
+        const citySelect = document.getElementById('jobCity');
+        citySelect.innerHTML = '<option value="">-- Select City --</option>';
+        
+        if (country && citiesByCountry[country]) {
+            citiesByCountry[country].forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city;
+                opt.textContent = city;
+                citySelect.appendChild(opt);
+            });
+            citySelect.disabled = false;
+        } else {
+            citySelect.disabled = true;
+        }
+        
+        document.getElementById('loadJobsBtn').disabled = true;
+    });
+    
+    document.getElementById('jobCity').addEventListener('change', function() {
+        document.getElementById('loadJobsBtn').disabled = !this.value;
+    });
+    
+    // Load job market data
+    document.getElementById('loadJobsBtn').addEventListener('click', async function() {
+        const country = document.getElementById('jobCountry').value;
+        const city = document.getElementById('jobCity').value;
+        
+        if (!country || !city) {
+            alert('Please select both country and city');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/job-market?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            if (data.jobs && data.jobs.length > 0) {
+                displayJobMarket(data);
+                document.getElementById('jobMarketSection').style.display = 'block';
+                document.getElementById('jobMarketSection').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('No job data found for selected location. Please try another location.');
+            }
+        } catch (error) {
+            console.error('Error loading job market data:', error);
+            alert('Error loading job market data. Please try again.');
+        }
+    });
+    
+    function displayJobMarket(data) {
+        // Update statistics
+        document.getElementById('avgSalary').textContent = '$' + (data.avg_salary || 0).toLocaleString();
+        document.getElementById('jobGrowth').textContent = data.job_growth || '+0%';
+        document.getElementById('unemploymentRate').textContent = data.unemployment_rate || '0%';
+        document.getElementById('topEmployersCount').textContent = data.top_employers?.length || 0;
+        
+        // Top employers
+        const employersHtml = data.top_employers?.map(emp => `
+            <span class="employer-tag"><i class="fas fa-building mr-1"></i>${emp}</span>
+        `).join('') || '';
+        document.getElementById('topEmployers').innerHTML = employersHtml;
+        
+        // Jobs list
+        const jobsHtml = data.jobs?.map(job => `
+            <div class="job-card card glow-border">
+                <div class="job-title">${job.title}</div>
+                <div class="mb-3">
+                    <span class="salary-range">${job.salary}</span>
+                    <span class="demand-badge demand-${job.demand.toLowerCase().replace(' ', '-')}">${job.demand}</span>
+                </div>
+                <div class="text-sm text-muted mb-3">
+                    <i class="fas fa-briefcase mr-1"></i>${job.companies} companies hiring
+                    <span class="growth-arrow ml-2"><i class="fas fa-arrow-up mr-1"></i>${job.growth}</span>
+                </div>
+                <button class="text-xs text-primary hover:text-primary/80">Learn more →</button>
+            </div>
+        `).join('') || '';
+        document.getElementById('jobsList').innerHTML = jobsHtml;
+        
+        // Update chart
+        updateSalaryChart(data.jobs || []);
+    }
+    
+    function updateSalaryChart(jobs) {
+        const ctx = document.getElementById('salaryChart').getContext('2d');
+        
+        if (currentChart) {
+            currentChart.destroy();
+        }
+        
+        // Extract salary ranges
+        const labels = jobs.map(j => j.title);
+        const salaryMins = jobs.map(j => {
+            const match = j.salary.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        });
+        
+        currentChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Salary Range (Min)',
+                    data: salaryMins,
+                    backgroundColor: 'rgba(100, 200, 255, 0.5)',
+                    borderColor: '#64c8ff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                },
+                scales: {
+                    y: { 
+                        ticks: { color: '#999' },
+                        grid: { color: 'rgba(100, 200, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#999' },
+                        grid: { color: 'rgba(100, 200, 255, 0.1)' }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,366 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}AI Interview Trainer - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<style>
+    .category-btn { padding: 1rem; background: rgba(100, 200, 255, 0.05); border: 2px solid rgba(100, 200, 255, 0.2); border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .category-btn.active { background: rgba(100, 200, 255, 0.15); border-color: #64c8ff; }
+    .category-btn:hover { border-color: #64c8ff; }
+    .question-card { padding: 1.5rem; background: rgba(100, 200, 255, 0.05); border-left: 4px solid #64c8ff; border-radius: 8px; margin-bottom: 1rem; cursor: pointer; transition: all 0.3s; }
+    .question-card:hover { background: rgba(100, 200, 255, 0.1); transform: translateX(4px); }
+    .difficulty-badge { display: inline-block; padding: 0.375rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .difficulty-easy { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+    .difficulty-medium { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+    .difficulty-hard { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .interview-interface { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .question-display { padding: 2rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); border-radius: 12px; }
+    .response-input { padding: 1.5rem; background: rgba(100, 200, 255, 0.05); border: 2px solid rgba(100, 200, 255, 0.2); border-radius: 8px; }
+    .response-input textarea { width: 100%; min-height: 150px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 6px; padding: 1rem; color: #fff; font-family: 'Courier New', monospace; }
+    .response-input textarea::placeholder { color: #666; }
+    .feedback-card { padding: 1.5rem; background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(100, 200, 255, 0.05)); border: 2px solid rgba(52, 211, 153, 0.3); border-radius: 8px; }
+    .feedback-item { padding: 0.75rem; background: rgba(100, 200, 255, 0.05); border-left: 3px solid #64c8ff; border-radius: 4px; margin-bottom: 0.5rem; }
+    .score-display { font-size: 2.5rem; font-weight: bold; color: #34d399; text-align: center; margin: 1rem 0; }
+    .metric-item { padding: 0.75rem; background: rgba(100, 200, 255, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .metric-check { color: #34d399; }
+    .metric-x { color: #ef4444; }
+    .tips-section { background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
+    .tip-item { margin-bottom: 1rem; }
+    .tip-item strong { color: #64c8ff; }
+    .history-card { padding: 1rem; background: rgba(100, 200, 255, 0.05); border-radius: 8px; margin-bottom: 0.75rem; }
+    .history-score { font-weight: bold; color: #34d399; }
+</style>
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">
+            <i class="fas fa-microphone mr-3 text-primary"></i>AI Interview Trainer
+        </h1>
+        <p class="text-muted">Practice interviews with intelligent feedback and coaching</p>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card glow-border text-center">
+            <div class="text-3xl font-bold text-primary" id="sessionsCompleted">0</div>
+            <div class="text-xs text-muted">Sessions Completed</div>
+        </div>
+        <div class="card glow-border text-center">
+            <div class="text-3xl font-bold text-primary" id="avgScore">0</div>
+            <div class="text-xs text-muted">Average Score</div>
+        </div>
+        <div class="card glow-border text-center">
+            <div class="text-3xl font-bold text-primary" id="bestScore">0</div>
+            <div class="text-xs text-muted">Best Score</div>
+        </div>
+        <div class="card glow-border text-center">
+            <div class="text-3xl font-bold text-primary" id="timeSpent">0 min</div>
+            <div class="text-xs text-muted">Time Spent</div>
+        </div>
+    </div>
+    
+    <!-- Category Selection -->
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-4">
+            <i class="fas fa-list-check mr-2"></i>Select Question Category
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button class="category-btn active" data-category="general">
+                <div class="text-lg mb-1"><i class="fas fa-user"></i></div>
+                <div class="text-sm font-bold">General</div>
+            </button>
+            <button class="category-btn" data-category="technical">
+                <div class="text-lg mb-1"><i class="fas fa-code"></i></div>
+                <div class="text-sm font-bold">Technical</div>
+            </button>
+            <button class="category-btn" data-category="behavioral">
+                <div class="text-lg mb-1"><i class="fas fa-lightbulb"></i></div>
+                <div class="text-sm font-bold">Behavioral</div>
+            </button>
+            <button class="category-btn" data-category="all">
+                <div class="text-lg mb-1"><i class="fas fa-star"></i></div>
+                <div class="text-sm font-bold">All Questions</div>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Questions List -->
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-4">
+            <i class="fas fa-question-circle mr-2"></i>Available Questions
+        </h2>
+        <div id="questionsContainer">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+    
+    <!-- Interview Practice Section (Hidden by default) -->
+    <div id="interviewSection" style="display: none;" class="card">
+        <h2 class="text-2xl font-bold mb-6">
+            <i class="fas fa-video mr-2"></i>Practice Interview Session
+        </h2>
+        
+        <div class="interview-interface">
+            <!-- Question Display -->
+            <div>
+                <div class="question-display">
+                    <div class="text-xs text-muted mb-2">Question</div>
+                    <h3 class="text-xl font-bold mb-4" id="currentQuestion">Tell me about yourself</h3>
+                    <div id="currentTips" class="tips-section">
+                        <!-- Tips populated by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Response Input -->
+            <div>
+                <div class="response-input">
+                    <div class="text-sm font-medium mb-3">Your Response</div>
+                    <textarea id="responseText" placeholder="Type your answer here... (think aloud, be specific, use examples)"></textarea>
+                    <button id="submitBtn" class="w-full mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-all">
+                        <i class="fas fa-check mr-2"></i>Get AI Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feedback Section (Hidden by default) -->
+        <div id="feedbackSection" style="display: none;" class="mt-8">
+            <div class="feedback-card">
+                <h3 class="text-2xl font-bold mb-4">
+                    <i class="fas fa-chart-pie mr-2"></i>Your Performance
+                </h3>
+                
+                <div class="score-display" id="scoreDisplay">75</div>
+                <div class="text-center text-muted mb-6" id="scoreMessage">Good effort! Room for improvement.</div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Metrics -->
+                    <div>
+                        <h4 class="font-bold text-primary mb-3">Response Metrics</h4>
+                        <div id="metricsContainer">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback Points -->
+                    <div>
+                        <h4 class="font-bold text-primary mb-3">Feedback Points</h4>
+                        <div id="feedbackItems">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Next Steps -->
+                <div class="mt-6 p-4 bg-rgba(52, 211, 153, 0.05) border border-rgba(52, 211, 153, 0.2) rounded-lg">
+                    <h4 class="font-bold text-primary mb-2"><i class="fas fa-arrow-right mr-2"></i>Next Steps</h4>
+                    <ol class="text-sm text-muted space-y-1 list-decimal list-inside">
+                        <li>Review the feedback above carefully</li>
+                        <li>Practice this question 2-3 more times</li>
+                        <li>Move to the next question or try again</li>
+                    </ol>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button id="retryBtn" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-all">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+                    <button id="nextBtn" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all">
+                        <i class="fas fa-arrow-right mr-2"></i>Next Question
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- History & Progress -->
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-4">
+            <i class="fas fa-history mr-2"></i>Practice History
+        </h2>
+        <div id="historyContainer" class="text-center text-muted">
+            <p>No practice sessions yet. Start your first session to see history here.</p>
+        </div>
+    </div>
+    
+    <!-- General Tips -->
+    <div class="card glow-border" style="background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(100, 200, 255, 0.05));">
+        <h2 class="text-2xl font-bold mb-6">
+            <i class="fas fa-lightbulb mr-2"></i>Interview Tips & Best Practices
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="tip-item">
+                <strong><i class="fas fa-star text-amber-400 mr-2"></i>STAR Method</strong>
+                <p class="text-sm text-muted mt-2">Situation → Task → Action → Result. Use this for behavioral questions.</p>
+            </div>
+            <div class="tip-item">
+                <strong><i class="fas fa-star text-amber-400 mr-2"></i>Be Specific</strong>
+                <p class="text-sm text-muted mt-2">Use concrete examples and quantifiable results when possible.</p>
+            </div>
+            <div class="tip-item">
+                <strong><i class="fas fa-star text-amber-400 mr-2"></i>Show Enthusiasm</strong>
+                <p class="text-sm text-muted mt-2">Demonstrate genuine interest in the university and program.</p>
+            </div>
+            <div class="tip-item">
+                <strong><i class="fas fa-star text-amber-400 mr-2"></i>Ask Questions</strong>
+                <p class="text-sm text-muted mt-2">Prepare 3-5 intelligent questions about the program and university.</p>
+            </div>
+            <div class="tip-item">
+                <strong><i class="fas fa-star text-amber-400 mr-2"></i>Practice Pronunciation</strong>
+                <p class="text-sm text-muted mt-2">Speak clearly and at a moderate pace. Pause between thoughts.</p>
+            </div>
+            <div class="tip-item">
+                <strong><i class="fas fa-star text-amber-400 mr-2"></i>Research Thoroughly</strong>
+                <p class="text-sm text-muted mt-2">Know about the university, faculty, programs, and recent news.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentCategory = 'general';
+    let currentQuestionId = null;
+    let allQuestions = [];
+    
+    // Load questions
+    async function loadQuestions(category) {
+        try {
+            const response = await fetch(`/api/interview-questions?category=${category}`);
+            const data = await response.json();
+            allQuestions = data.questions || [];
+            renderQuestions();
+        } catch (error) {
+            console.error('Error loading questions:', error);
+        }
+    }
+    
+    function renderQuestions() {
+        const container = document.getElementById('questionsContainer');
+        
+        if (!allQuestions.length) {
+            container.innerHTML = '<div class="text-center text-muted">No questions available</div>';
+            return;
+        }
+        
+        container.innerHTML = allQuestions.map(q => `
+            <div class="question-card" onclick="startQuestion(${q.id}, this)">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-bold mb-2">${q.question}</h4>
+                        <p class="text-xs text-muted mb-2">${q.category}</p>
+                    </div>
+                    <span class="difficulty-badge difficulty-${q.difficulty.toLowerCase()}">${q.difficulty}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function startQuestion(questionId, element) {
+        const question = allQuestions.find(q => q.id === questionId);
+        if (!question) return;
+        
+        currentQuestionId = questionId;
+        document.getElementById('currentQuestion').textContent = question.question;
+        document.getElementById('currentTips').innerHTML = `
+            <strong><i class="fas fa-bulb text-amber-400 mr-2"></i>Tip:</strong> ${question.tips}
+        `;
+        document.getElementById('responseText').value = '';
+        document.getElementById('feedbackSection').style.display = 'none';
+        document.getElementById('interviewSection').style.display = 'block';
+        
+        // Highlight selected question
+        document.querySelectorAll('.question-card').forEach(el => el.style.opacity = '0.5');
+        element.style.opacity = '1';
+        
+        document.getElementById('interviewSection').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Submit response
+    document.getElementById('submitBtn').addEventListener('click', async function() {
+        const response = document.getElementById('responseText').value;
+        
+        if (!response.trim()) {
+            alert('Please provide a response before submitting.');
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/interview-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question_id: currentQuestionId,
+                    response: response
+                })
+            });
+            
+            const data = await res.json();
+            displayFeedback(data);
+        } catch (error) {
+            console.error('Error submitting response:', error);
+        }
+    });
+    
+    function displayFeedback(data) {
+        document.getElementById('scoreDisplay').textContent = data.score;
+        
+        const message = data.score >= 80 ? 'Excellent answer!' :
+                       data.score >= 60 ? 'Good effort! Room for improvement.' :
+                       'Keep practicing! You\'ll improve quickly.';
+        document.getElementById('scoreMessage').textContent = message;
+        
+        // Metrics
+        const metricsHtml = [
+            { label: 'Word Count', value: data.metrics.word_count, target: '100-300 words' },
+            { label: 'Includes Examples', value: data.metrics.has_examples },
+            { label: 'Uses Metrics', value: data.metrics.has_metrics },
+            { label: 'Shows Learning', value: data.metrics.has_learning }
+        ].map(m => `
+            <div class="metric-item">
+                <span>${m.label}</span>
+                <span>${m.value === true ? '<i class="fas fa-check metric-check"></i>' : m.value === false ? '<i class="fas fa-times metric-x"></i>' : m.value}</span>
+            </div>
+        `).join('');
+        
+        document.getElementById('metricsContainer').innerHTML = metricsHtml;
+        
+        // Feedback items
+        const feedbackHtml = data.feedback.map(f => `
+            <div class="feedback-item">
+                <i class="fas fa-lightbulb text-amber-400 mr-2"></i>${f}
+            </div>
+        `).join('');
+        
+        document.getElementById('feedbackItems').innerHTML = feedbackHtml;
+        document.getElementById('feedbackSection').style.display = 'block';
+        document.getElementById('feedbackSection').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Category buttons
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentCategory = this.dataset.category;
+            loadQuestions(currentCategory);
+        });
+    });
+    
+    document.getElementById('retryBtn').addEventListener('click', function() {
+        document.getElementById('feedbackSection').style.display = 'none';
+        document.getElementById('responseText').focus();
+    });
+    
+    document.getElementById('nextBtn').addEventListener('click', function() {
+        const nextCard = document.querySelector('.question-card');
+        if (nextCard) {
+            document.getElementById('feedbackSection').style.display = 'none';
+            nextCard.click();
+        }
+    });
+    
+    // Initialize
+    window.addEventListener('load', () => loadQuestions('general'));
+</script>
+{% endblock %}

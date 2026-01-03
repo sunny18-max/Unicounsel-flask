@@ -1,0 +1,292 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Safety & City Insights - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.css" />
+<style>
+    .safety-card { transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .safety-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(100, 200, 255, 0.15); }
+    .safety-score { font-size: 2.5rem; font-weight: bold; background: conic-gradient(#34d399 var(--score), rgba(52, 211, 153, 0.2) 0); border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+    .neighborhood-card { padding: 1.5rem; background: rgba(100, 200, 255, 0.05); border-left: 4px solid #64c8ff; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .neighborhood-card:hover { background: rgba(100, 200, 255, 0.1); border-left-color: #34d399; }
+    .safety-indicator { display: flex; align-items: center; margin: 0.75rem 0; }
+    .safety-indicator i { width: 20px; margin-right: 0.75rem; }
+    .indicator-high { color: #34d399; }
+    .indicator-medium { color: #fb923c; }
+    .indicator-low { color: #ef4444; }
+    .tip-card { padding: 1rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); border-radius: 8px; border-left: 3px solid #64c8ff; }
+    .chart-container { position: relative; height: 300px; margin: 2rem 0; }
+    .emergency-contact { padding: 1.5rem; background: rgba(239, 68, 68, 0.05); border: 2px solid rgba(239, 68, 68, 0.2); border-radius: 8px; }
+    .resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .resource-item { padding: 1rem; background: rgba(100, 200, 255, 0.05); border-radius: 8px; }
+</style>
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">
+            <i class="fas fa-shield-alt mr-3 text-primary"></i>Safety & City Insights
+        </h1>
+        <p class="text-muted">Comprehensive safety data and quality of life information for international students</p>
+    </div>
+    
+    <!-- Location Selector -->
+    <div class="card">
+        <h2 class="text-xl font-bold mb-4">Select a City to Explore</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium mb-2">Country</label>
+                <select id="safetyCountry" class="w-full border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+                    <option value="">-- Select Country --</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Ethiopia">Ethiopia</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">City</label>
+                <select id="safetyCity" class="w-full border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;" disabled>
+                    <option value="">-- Select City --</option>
+                </select>
+            </div>
+        </div>
+        <button id="loadSafetyBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-all" disabled>
+            <i class="fas fa-location-dot mr-2"></i>View Safety Insights
+        </button>
+    </div>
+    
+    <!-- Safety Insights Section (Hidden by default) -->
+    <div id="safetySection" style="display: none;" class="space-y-8">
+        
+        <!-- Overall Safety Scores -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="safety-card card glow-border text-center">
+                <div class="mb-3">
+                    <div class="text-sm text-muted mb-2">Overall Safety</div>
+                    <div class="text-3xl font-bold text-primary" id="overallScore">8.5/10</div>
+                </div>
+            </div>
+            <div class="safety-card card glow-border text-center">
+                <div class="mb-3">
+                    <div class="text-sm text-muted mb-2">Crime Rate</div>
+                    <div class="text-2xl font-bold" id="crimeRate" style="color: #34d399;">Low</div>
+                </div>
+            </div>
+            <div class="safety-card card glow-border text-center">
+                <div class="mb-3">
+                    <div class="text-sm text-muted mb-2">Women's Safety</div>
+                    <div class="text-3xl font-bold text-primary" id="womenSafety">8.8/10</div>
+                </div>
+            </div>
+            <div class="safety-card card glow-border text-center">
+                <div class="mb-3">
+                    <div class="text-sm text-muted mb-2">Nightlife Safety</div>
+                    <div class="text-3xl font-bold text-primary" id="nightlifeSafety">8.2/10</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Safety Features -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-check-circle mr-2"></i>Safety Features & Services
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-bold text-primary mb-4">City Infrastructure</h3>
+                    <div id="safetyFeatures" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-primary mb-4">Student Resources</h3>
+                    <div id="studentResources" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Neighborhoods -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-map-marker-alt mr-2"></i>Recommended Neighborhoods for Students
+            </h2>
+            <div id="neighborhoodsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <!-- Safety Tips -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-lightbulb mr-2"></i>Safety Tips for Students
+            </h2>
+            <div id="tipsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <!-- Emergency Contacts -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-phone mr-2"></i>Emergency Contacts & Resources
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="emergency-contact">
+                    <h3 class="font-bold text-red-500 mb-3">Emergency Services</h3>
+                    <div id="emergencyServices">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div class="emergency-contact">
+                    <h3 class="font-bold text-amber-500 mb-3">University Support</h3>
+                    <div id="universitySupport">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quality of Life -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">
+                <i class="fas fa-heart mr-2"></i>Quality of Life Indicators
+            </h2>
+            <div class="resource-grid">
+                <div class="resource-item">
+                    <div class="font-bold text-primary mb-2">Healthcare Facilities</div>
+                    <div id="healthFacilities" class="text-sm text-muted">Loading...</div>
+                </div>
+                <div class="resource-item">
+                    <div class="font-bold text-primary mb-2">Public Transport Safety</div>
+                    <div id="transportSafety" class="text-sm text-muted">Loading...</div>
+                </div>
+                <div class="resource-item">
+                    <div class="font-bold text-primary mb-2">Internet Connectivity</div>
+                    <div class="text-sm text-muted">95%+ coverage in urban areas</div>
+                </div>
+                <div class="resource-item">
+                    <div class="font-bold text-primary mb-2">Entertainment Options</div>
+                    <div class="text-sm text-muted">Shopping, dining, sports, cultural</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+<script>
+    const citiesByCountrySafety = {
+        'Australia': ['Melbourne', 'Sydney'],
+        'Ethiopia': ['Addis Ababa']
+    };
+    
+    document.getElementById('safetyCountry').addEventListener('change', function() {
+        const country = this.value;
+        const citySelect = document.getElementById('safetyCity');
+        citySelect.innerHTML = '<option value="">-- Select City --</option>';
+        
+        if (country && citiesByCountrySafety[country]) {
+            citiesByCountrySafety[country].forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city;
+                opt.textContent = city;
+                citySelect.appendChild(opt);
+            });
+            citySelect.disabled = false;
+        } else {
+            citySelect.disabled = true;
+        }
+        
+        document.getElementById('loadSafetyBtn').disabled = true;
+    });
+    
+    document.getElementById('safetyCity').addEventListener('change', function() {
+        document.getElementById('loadSafetyBtn').disabled = !this.value;
+    });
+    
+    document.getElementById('loadSafetyBtn').addEventListener('click', async function() {
+        const country = document.getElementById('safetyCountry').value;
+        const city = document.getElementById('safetyCity').value;
+        
+        try {
+            const response = await fetch(`/api/safety-insights?country=${country}&city=${city}`);
+            const data = await response.json();
+            
+            displaySafetyInsights(data);
+            document.getElementById('safetySection').style.display = 'block';
+            document.getElementById('safetySection').scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            console.error('Error loading safety data:', error);
+        }
+    });
+    
+    function displaySafetyInsights(data) {
+        // Update scores
+        document.getElementById('overallScore').textContent = data.safety_score?.toFixed(1) + '/10';
+        document.getElementById('crimeRate').textContent = data.crime_rate || 'N/A';
+        document.getElementById('womenSafety').textContent = data.women_safety?.toFixed(1) + '/10';
+        document.getElementById('nightlifeSafety').textContent = data.nightlife_safety?.toFixed(1) + '/10';
+        
+        // Safety features
+        const featuresHtml = [
+            `<div class="safety-indicator"><i class="fas fa-check indicator-high"></i>Public Transport Safety: ${data.public_transport_safety}/10</div>`,
+            `<div class="safety-indicator"><i class="fas fa-check indicator-high"></i>Emergency Services: ${data.emergency_services}</div>`,
+            `<div class="safety-indicator"><i class="fas fa-check indicator-high"></i>Healthcare Facilities: ${data.health_facilities} major centers</div>`,
+        ].join('');
+        document.getElementById('safetyFeatures').innerHTML = featuresHtml;
+        
+        // Student resources
+        const resourcesHtml = (data.student_resources || []).map(r => 
+            `<div class="safety-indicator"><i class="fas fa-check indicator-high"></i>${r}</div>`
+        ).join('');
+        document.getElementById('studentResources').innerHTML = resourcesHtml;
+        
+        // Neighborhoods
+        const neighborhoodsHtml = (data.neighborhoods || []).map(n => `
+            <div class="neighborhood-card">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <h3 class="font-bold">${n.name}</h3>
+                        <div class="text-xs text-muted mt-1">${n.vibe}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-primary font-bold">${n.safety}/10</div>
+                        <div class="text-xs text-muted">Safety</div>
+                    </div>
+                </div>
+                <div class="flex gap-2 text-xs mt-2">
+                    <span class="px-2 py-1 bg-rgba(100, 200, 255, 0.1) text-primary rounded">Cost: ${n.cost}</span>
+                    <span class="px-2 py-1 bg-rgba(52, 211, 153, 0.1) text-green-400 rounded">Students: ${n.students}</span>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('neighborhoodsGrid').innerHTML = neighborhoodsHtml;
+        
+        // Tips
+        const tipsHtml = (data.tips || []).map(tip => `
+            <div class="tip-card">
+                <i class="fas fa-lightbulb text-primary mr-2"></i>${tip}
+            </div>
+        `).join('');
+        document.getElementById('tipsContainer').innerHTML = tipsHtml;
+        
+        // Emergency contacts
+        document.getElementById('emergencyServices').innerHTML = `
+            <div class="text-sm"><strong>Police:</strong> ${data.contacts?.police || '000'}</div>
+            <div class="text-sm"><strong>Ambulance:</strong> ${data.contacts?.ambulance || '000'}</div>
+            <div class="text-sm"><strong>Fire:</strong> ${data.contacts?.fire || '000'}</div>
+        `;
+        
+        document.getElementById('universitySupport').innerHTML = `
+            <div class="text-sm"><strong>Campus Security:</strong> 24/7 Available</div>
+            <div class="text-sm"><strong>Student Hotline:</strong> Available during hours</div>
+            <div class="text-sm"><strong>Counseling Services:</strong> Free & confidential</div>
+        `;
+        
+        // Quality of life
+        document.getElementById('healthFacilities').textContent = `${data.health_facilities || 15} major facilities`;
+        document.getElementById('transportSafety').textContent = `${data.public_transport_safety || 9}/10`;
+    }
+</script>
+{% endblock %}

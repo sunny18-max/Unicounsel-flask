@@ -1,0 +1,269 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Fee Comparison - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">Fee Comparison Tool</h1>
+        <p class="text-muted">Compare tuition fees and costs across your matched universities</p>
+    </div>
+    
+    <!-- University Selection -->
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-4">Select Universities to Compare</h2>
+        <p class="text-sm text-muted mb-4">Choose 2-4 universities from your matches</p>
+        
+        <div id="university-selector" class="space-y-2 mb-4">
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary mb-4"></i>
+                <p class="text-muted">Loading your matched universities...</p>
+            </div>
+        </div>
+        
+        <button id="compare-btn" class="btn-primary" disabled>
+            <i class="fas fa-chart-bar mr-2"></i>Compare Selected (0)
+        </button>
+    </div>
+    
+    <!-- Comparison Results -->
+    <div id="comparison-results" class="hidden">
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-6">Comparison Analysis</h2>
+            
+            <!-- Visual Chart -->
+            <div class="mb-8">
+                <canvas id="cost-chart" height="100"></canvas>
+            </div>
+            
+            <!-- Detailed Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left" id="comparison-table">
+                    <thead class="border-b border-border">
+                        <tr>
+                            <th class="py-3 px-4">Metric</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparison-tbody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Key Insights -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4" id="insights-container">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+let selectedUniversities = [];
+let allMatches = [];
+let comparisonChart = null;
+
+async function loadMatches() {
+    try {
+        const response = await fetch('/api/matches?per_page=50');
+        const data = await response.json();
+        allMatches = data.matches || [];
+        
+        const container = document.getElementById('university-selector');
+        if (allMatches.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-university text-4xl text-muted mb-4"></i>
+                    <p class="text-muted">No university matches found. Complete onboarding to get matches.</p>
+                    <a href="/onboarding" class="btn-primary mt-4 inline-block">Start Onboarding</a>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = allMatches.map(match => `
+            <label class="flex items-center p-4 border border-border rounded-lg hover:bg-primary/5 cursor-pointer transition-colors university-checkbox">
+                <input type="checkbox" value="${match.id}" class="mr-3 w-4 h-4" onchange="toggleSelection(this, '${match.id}')">
+                <div class="flex-1">
+                    <p class="font-semibold">${match.name}</p>
+                    <p class="text-sm text-muted">${match.city}, ${match.country}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-primary font-semibold">$${match.total_cost ? match.total_cost.toLocaleString() : 'N/A'}</p>
+                    <p class="text-xs text-muted">per year</p>
+                </div>
+            </label>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading matches:', error);
+    }
+}
+
+function toggleSelection(checkbox, uniId) {
+    const match = allMatches.find(m => m.id === uniId);
+    if (checkbox.checked) {
+        if (selectedUniversities.length >= 4) {
+            checkbox.checked = false;
+            showToast('Maximum 4 universities can be compared', 'error');
+            return;
+        }
+        selectedUniversities.push(match);
+    } else {
+        selectedUniversities = selectedUniversities.filter(u => u.id !== uniId);
+    }
+    updateCompareButton();
+}
+
+function updateCompareButton() {
+    const btn = document.getElementById('compare-btn');
+    btn.textContent = `Compare Selected (${selectedUniversities.length})`;
+    btn.disabled = selectedUniversities.length < 2;
+}
+
+async function compareUniversities() {
+    if (selectedUniversities.length < 2) return;
+    
+    try {
+        const response = await fetch('/api/fee-comparison', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                university_ids: selectedUniversities.map(u => u.id)
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            displayComparison(data.comparison);
+        }
+    } catch (error) {
+        console.error('Error comparing fees:', error);
+        showToast('Failed to compare universities', 'error');
+    }
+}
+
+function displayComparison(comparison) {
+    document.getElementById('comparison-results').classList.remove('hidden');
+    
+    // Prepare chart data
+    const labels = comparison.map(c => c.name);
+    const tuitionData = comparison.map(c => c.tuition_fee || 0);
+    const livingData = comparison.map(c => c.living_cost || 0);
+    const totalData = comparison.map(c => c.total_cost || 0);
+    
+    // Create chart
+    const ctx = document.getElementById('cost-chart').getContext('2d');
+    if (comparisonChart) comparisonChart.destroy();
+    
+    comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Tuition Fee',
+                    data: tuitionData,
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)'
+                },
+                {
+                    label: 'Living Cost',
+                    data: livingData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)'
+                },
+                {
+                    label: 'Total Cost',
+                    data: totalData,
+                    backgroundColor: 'rgba(34, 197, 94, 0.8)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {position: 'top'},
+                title: {display: true, text: 'Cost Comparison'}
+            },
+            scales: {
+                y: {beginAtZero: true}
+            }
+        }
+    });
+    
+    // Build table
+    const table = document.getElementById('comparison-table');
+    const thead = table.querySelector('thead tr');
+    thead.innerHTML = '<th class="py-3 px-4">Metric</th>';
+    comparison.forEach(c => {
+        thead.innerHTML += `<th class="py-3 px-4">${c.name}</th>`;
+    });
+    
+    const tbody = document.getElementById('comparison-tbody');
+    tbody.innerHTML = `
+        <tr class="border-b border-border">
+            <td class="py-3 px-4 font-medium">Country</td>
+            ${comparison.map(c => `<td class="py-3 px-4">${c.country}</td>`).join('')}
+        </tr>
+        <tr class="border-b border-border">
+            <td class="py-3 px-4 font-medium">City</td>
+            ${comparison.map(c => `<td class="py-3 px-4">${c.city}</td>`).join('')}
+        </tr>
+        <tr class="border-b border-border">
+            <td class="py-3 px-4 font-medium">Tuition Fee (Annual)</td>
+            ${comparison.map(c => `<td class="py-3 px-4 text-primary font-semibold">$${(c.tuition_fee || 0).toLocaleString()}</td>`).join('')}
+        </tr>
+        <tr class="border-b border-border">
+            <td class="py-3 px-4 font-medium">Living Cost (Annual)</td>
+            ${comparison.map(c => `<td class="py-3 px-4">$${(c.living_cost || 0).toLocaleString()}</td>`).join('')}
+        </tr>
+        <tr class="border-b border-border bg-primary/5">
+            <td class="py-3 px-4 font-bold">Total Annual Cost</td>
+            ${comparison.map(c => `<td class="py-3 px-4 font-bold text-green-500">$${(c.total_cost || 0).toLocaleString()}</td>`).join('')}
+        </tr>
+        <tr class="border-b border-border">
+            <td class="py-3 px-4 font-medium">Scholarships</td>
+            ${comparison.map(c => `<td class="py-3 px-4">${c.scholarships ? '<i class="fas fa-check text-green-500"></i> Available' : '<i class="fas fa-times text-red-500"></i> N/A'}</td>`).join('')}
+        </tr>
+    `;
+    
+    // Generate insights
+    const minCost = Math.min(...totalData.filter(v => v > 0));
+    const maxCost = Math.max(...totalData);
+    const avgCost = totalData.reduce((a, b) => a + b, 0) / totalData.length;
+    const cheapest = comparison.find(c => c.total_cost === minCost);
+    
+    document.getElementById('insights-container').innerHTML = `
+        <div class="card glow-border">
+            <i class="fas fa-dollar-sign text-green-500 text-2xl mb-2"></i>
+            <p class="text-sm text-muted mb-1">Most Affordable</p>
+            <p class="font-bold">${cheapest?.name}</p>
+            <p class="text-primary text-sm">$${minCost.toLocaleString()}/year</p>
+        </div>
+        <div class="card glow-border">
+            <i class="fas fa-chart-line text-blue-500 text-2xl mb-2"></i>
+            <p class="text-sm text-muted mb-1">Average Cost</p>
+            <p class="font-bold text-2xl">$${Math.round(avgCost).toLocaleString()}</p>
+            <p class="text-sm text-muted">per year</p>
+        </div>
+        <div class="card glow-border">
+            <i class="fas fa-piggy-bank text-yellow-500 text-2xl mb-2"></i>
+            <p class="text-sm text-muted mb-1">Cost Difference</p>
+            <p class="font-bold text-2xl">$${(maxCost - minCost).toLocaleString()}</p>
+            <p class="text-sm text-muted">between highest and lowest</p>
+        </div>
+    `;
+    
+    // Scroll to results
+    document.getElementById('comparison-results').scrollIntoView({behavior: 'smooth'});
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+document.getElementById('compare-btn').addEventListener('click', compareUniversities);
+loadMatches();
+</script>
+{% endblock %}

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Counseling Hub - Your Gateway to Global Education</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+    <!-- Hero Section with Carousel -->
+    <header class="hero">
+        <div class="hero-carousel">
+            <div class="carousel-container">
+                <div class="carousel-slide active">
+                    <img src="https://images.pexels.com/photos/7973206/pexels-photo-7973206.jpeg" alt="Students walking on campus - Photo by George Pak on Pexels">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <h1 class="carousel-title">Your Dream University Awaits</h1>
+                        <p class="carousel-subtitle">Expert guidance for international admissions</p>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="https://images.pexels.com/photos/5940705/pexels-photo-5940705.jpeg" alt="Students studying together - Photo by Kampus Production on Pexels">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <h1 class="carousel-title">Collaborative Learning Environment</h1>
+                        <p class="carousel-subtitle">Connect with peers from around the world</p>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="https://images.unsplash.com/photo-1645262960735-1af893390f8b?q=85" alt="Graduation celebration - Photo by Oscar Omondi on Unsplash">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <h1 class="carousel-title">Celebrate Your Success</h1>
+                        <p class="carousel-subtitle">From application to graduation, we're with you</p>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="https://images.pexels.com/photos/8472864/pexels-photo-8472864.jpeg" alt="Online learning - Photo by MART PRODUCTION on Pexels">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <h1 class="carousel-title">Modern Learning Tools</h1>
+                        <p class="carousel-subtitle">Access resources anytime, anywhere</p>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="https://pixabay.com/get/gf199d688fab2451b400320e3dc7f29de0312b9b1f608e51b2dc0ecc53db3a3ef1a1913619f98fc1a02e8594f82f58b40.jpg" alt="Global education network - Photo by TheDigitalArtist on Pixabay">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <h1 class="carousel-title">Global Education Network</h1>
+                        <p class="carousel-subtitle">Explore thousands of universities worldwide</p>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-nav">
+                <button class="carousel-btn prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="carousel-indicators">
+                <span class="indicator active" data-slide="0"></span>
+                <span class="indicator" data-slide="1"></span>
+                <span class="indicator" data-slide="2"></span>
+                <span class="indicator" data-slide="3"></span>
+                <span class="indicator" data-slide="4"></span>
+            </div>
+        </div>
+        <div class="hero-actions">
+            <a href="{{ url_for('login') }}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Start Your Journey
+            </a>
+            <a href="#universities" class="btn btn-secondary">
+                <i class="fas fa-globe"></i> Explore Universities
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Statistics Section -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">10,000+</h3>
+                        <p class="stat-label">Universities Worldwide</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">50,000+</h3>
+                        <p class="stat-label">Students Counseled</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-globe-americas"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">150+</h3>
+                        <p class="stat-label">Countries Covered</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">95%</h3>
+                        <p class="stat-label">Success Rate</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="guidance" class="section">
+            <div class="section-header">
+                <span class="section-badge">Our Services</span>
+                <h2><i class="fas fa-user-graduate"></i> Comprehensive Student Guidance</h2>
+                <p>Step-by-step support from choosing your course to submitting applications.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-compass"></i>
+                    </div>
+                    <h3>Profile Assessment</h3>
+                    <p>Evaluate your academic background, interests, and goals to shortlist suitable programs tailored to your aspirations.</p>
+                    <a href="{{ url_for('login') }}" class="feature-link">Get Started <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-list-check"></i>
+                    </div>
+                    <h3>Application Roadmap</h3>
+                    <p>Clear timelines for tests, applications, scholarships, and visa processes to keep you on track.</p>
+                    <a href="{{ url_for('login') }}" class="feature-link">View Roadmap <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>1:1 Counseling</h3>
+                    <p>Get personalized guidance to compare universities, courses, and destinations from expert counselors.</p>
+                    <a href="{{ url_for('login') }}" class="feature-link">Book Session <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                    <h3>SOP & Resume Building</h3>
+                    <p>Professional assistance in crafting compelling statements and resumes that stand out.</p>
+                    <a href="{{ url_for('login') }}" class="feature-link">Get Help <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h3>Scholarship Guidance</h3>
+                    <p>Discover and apply for scholarships and financial aid opportunities worldwide.</p>
+                    <a href="{{ url_for('login') }}" class="feature-link">Find Scholarships <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-passport"></i>
+                    </div>
+                    <h3>Visa Assistance</h3>
+                    <p>Complete support for visa applications, documentation, and interview preparation.</p>
+                    <a href="{{ url_for('login') }}" class="feature-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process Timeline -->
+        <section class="section timeline-section">
+            <div class="section-header">
+                <span class="section-badge">How It Works</span>
+                <h2><i class="fas fa-route"></i> Your Journey to Success</h2>
+                <p>A simple 6-step process to guide you from exploration to enrollment.</p>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker">1</div>
+                    <div class="timeline-content">
+                        <h3>Create Your Profile</h3>
+                        <p>Sign up and complete your academic profile with your qualifications and preferences.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker">2</div>
+                    <div class="timeline-content">
+                        <h3>Explore Universities</h3>
+                        <p>Browse thousands of universities on our interactive map and filter by your criteria.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker">3</div>
+                    <div class="timeline-content">
+                        <h3>Get Counseling</h3>
+                        <p>Schedule sessions with expert counselors to refine your university shortlist.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker">4</div>
+                    <div class="timeline-content">
+                        <h3>Prepare Documents</h3>
+                        <p>Follow our checklist and get assistance with SOPs, resumes, and recommendations.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker">5</div>
+                    <div class="timeline-content">
+                        <h3>Submit Applications</h3>
+                        <p>Apply to your shortlisted universities with our guided application process.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker">6</div>
+                    <div class="timeline-content">
+                        <h3>Visa & Enrollment</h3>
+                        <p>Get visa assistance and prepare for your journey to your dream university.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="section testimonials-section">
+            <div class="section-header">
+                <span class="section-badge">Success Stories</span>
+                <h2><i class="fas fa-quote-left"></i> What Our Students Say</h2>
+                <p>Real experiences from students who achieved their dreams with our guidance.</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"The counseling team helped me navigate the complex application process to MIT. Their personalized guidance was invaluable!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <img src="https://i.pravatar.cc/100?u=priya" alt="Priya Sharma">
+                        </div>
+                        <div class="author-info">
+                            <h4>Priya Sharma</h4>
+                            <p>MIT, Class of 2024</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"I got into Oxford with their amazing SOP assistance and interview prep. The interactive map feature helped me explore so many options!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <img src="https://i.pravatar.cc/100?u=rahul" alt="Rahul Verma">
+                        </div>
+                        <div class="author-info">
+                            <h4>Rahul Verma</h4>
+                            <p>Oxford University, 2023</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"From scholarship hunting to visa assistance, they supported me at every step. Now I'm studying at University of Toronto!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <img src="https://i.pravatar.cc/100?u=ananya" alt="Ananya Patel">
+                        </div>
+                        <div class="author-info">
+                            <h4>Ananya Patel</h4>
+                            <p>University of Toronto, 2024</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documents" class="section section-alt">
+            <div class="section-header">
+                <span class="section-badge">Preparation</span>
+                <h2><i class="fas fa-file-alt"></i> Essential Documents Checklist</h2>
+                <p>Prepare your documents early to ensure smooth and timely applications.</p>
+            </div>
+            <div class="documents-grid">
+                <div class="doc-card">
+                    <div class="doc-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Academic Documents</h3>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> Transcripts / mark sheets</li>
+                        <li><i class="fas fa-check-circle"></i> Degree / provisional certificates</li>
+                        <li><i class="fas fa-check-circle"></i> Standardized test scores (SAT, GRE, GMAT)</li>
+                        <li><i class="fas fa-check-circle"></i> English proficiency (IELTS, TOEFL, PTE)</li>
+                    </ul>
+                </div>
+                <div class="doc-card">
+                    <div class="doc-icon">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                    <h3>Application Documents</h3>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> Statement of Purpose (SOP)</li>
+                        <li><i class="fas fa-check-circle"></i> Letters of Recommendation (LORs)</li>
+                        <li><i class="fas fa-check-circle"></i> Updated CV / Resume</li>
+                        <li><i class="fas fa-check-circle"></i> Portfolio (for design / arts programs)</li>
+                    </ul>
+                </div>
+                <div class="doc-card">
+                    <div class="doc-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <h3>Financial & Visa</h3>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> Bank statements & financial affidavits</li>
+                        <li><i class="fas fa-check-circle"></i> Scholarship documents (if any)</li>
+                        <li><i class="fas fa-check-circle"></i> Passport & ID proofs</li>
+                        <li><i class="fas fa-check-circle"></i> Visa application forms & photos</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Universities Section -->
+        <section id="universities" class="section">
+            <div class="section-header">
+                <span class="section-badge">Destinations</span>
+                <h2><i class="fas fa-university"></i> Featured Universities</h2>
+                <p>Get an overview of some popular destinations. Explore thousands more on our interactive map.</p>
+            </div>
+            <div class="card-grid">
+                <article class="uni-card">
+                    <div class="uni-image" style="background-image: url('https://imgs.search.brave.com/Ji1mfsgHj6j0upb3YIx54rdIC4tKvXM60QpjY7HBBY8/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjE3/MDAyMDAzNS9waG90/by93aWRlbmVyLW1l/bW9yaWFsLWxpYnJh/cnktaGFydmFyZC15/YXJkLWhhcnZhcmQt/dW5pdmVyc2l0eS1j/YW1icmlkZ2UtbWFz/c2FjaHVzZXR0cy5q/cGc_cz02MTJ4NjEy/Jnc9MCZrPTIwJmM9/OEYzQTlvaW5GQTNT/cXNFWnVMR2lXSHpx/UU13T1RtX0Fjb2l0/WVdmbEktTT0');"></div>
+                    <div class="uni-body">
+                        <span class="uni-rank">#1 Global</span>
+                        <h3>Harvard University</h3>
+                        <p class="uni-location"><i class="fas fa-map-marker-alt"></i> Cambridge, USA</p>
+                        <p>World-leading research and diverse undergraduate and graduate programs across all disciplines.</p>
+                        <div class="uni-tags">
+                            <span class="tag">USA</span>
+                            <span class="tag tag-secondary">Ivy League</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="uni-card">
+                    <div class="uni-image" style="background-image: url('https://imgs.search.brave.com/sHRypNozxVNnZIemz0FR3qz1fA4oqA8qJ3e4xu8nh9A/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTgy/ODU5MTcxL3Bob3Rv/L294Zm9yZC11bml2/ZXJzaXR5LWdyYWR1/YXRlcy5qcGc_cz02/MTJ4NjEyJnc9MCZr/PTIwJmM9UVh2MVZr/NW1WT3FtUWhyUHB3/U2dKRk9DbUdXazdR/eHc1aUhhNm5WQ1hV/Yz0');"></div>
+                    <div class="uni-body">
+                        <span class="uni-rank">#2 Global</span>
+                        <h3>University of Oxford</h3>
+                        <p class="uni-location"><i class="fas fa-map-marker-alt"></i> Oxford, UK</p>
+                        <p>Historic colleges with globally recognized teaching and research excellence since 1096.</p>
+                        <div class="uni-tags">
+                            <span class="tag">UK</span>
+                            <span class="tag tag-secondary">Russell Group</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="uni-card">
+                    <div class="uni-image" style="background-image: url('https://imgs.search.brave.com/LprNyqsPXq1R6TIOCp1WilETme_tWAZmj29zr64Osxk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90My5m/dGNkbi5uZXQvanBn/LzE0LzgzLzkyLzc4/LzM2MF9GXzE0ODM5/Mjc4MDBfTzdLQVIy/SE1hbFJtVllKMUlV/TFNSZjVWZG9JaTBs/TlouanBn');"></div>
+                    <div class="uni-body">
+                        <span class="uni-rank">#18 Global</span>
+                        <h3>University of Toronto</h3>
+                        <p class="uni-location"><i class="fas fa-map-marker-alt"></i> Toronto, Canada</p>
+                        <p>Top-ranked public university with strong co-op programs and research opportunities.</p>
+                        <div class="uni-tags">
+                            <span class="tag">Canada</span>
+                            <span class="tag tag-secondary">U15</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="uni-card">
+                    <div class="uni-image" style="background-image: url('https://imgs.search.brave.com/v9cDaWQ1Hz21z_-XX4Lm_H8olMnTLzdTrXr9eAdb4dU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzI5LzFm/LzE2LzI5MWYxNjA5/YmI4MDIxNmI2NWU0/NWUyYzhkMTRlNGMw/LmpwZw');"></div>
+                    <div class="uni-body">
+                        <span class="uni-rank">#8 Asia</span>
+                        <h3>National University of Singapore</h3>
+                        <p class="uni-location"><i class="fas fa-map-marker-alt"></i> Singapore</p>
+                        <p>Asia's leading university with strong engineering, business, and computing programs.</p>
+                        <div class="uni-tags">
+                            <span class="tag">Singapore</span>
+                            <span class="tag tag-secondary">ASEAN</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="uni-card">
+                    <div class="uni-image" style="background-image: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=85');"></div>
+                    <div class="uni-body">
+                        <span class="uni-rank">#3 Global</span>
+                        <h3>University of Melbourne</h3>
+                        <p class="uni-location"><i class="fas fa-map-marker-alt"></i> Melbourne, Australia</p>
+                        <p>Australia's leading research university with world-class programs across all disciplines.</p>
+                        <div class="uni-tags">
+                            <span class="tag">Australia</span>
+                            <span class="tag tag-secondary">Group of Eight</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="uni-card">
+                    <div class="uni-image" style="background-image: url('https://imgs.search.brave.com/mBhNITpoMPl10KjlKjAwf1fiYj3sZG9_m44IRaFbLzc/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzA0LzM3LzEwLzA1/LzM2MF9GXzQzNzEw/MDUzNF9UMXFSczhi/dDg3ZlRhV0FVNXNO/MEFaaDlsekNsREt0/Vy5qcGc');"></div>
+                    <div class="uni-body">
+                        <span class="uni-rank">#15 Global</span>
+                        <h3>ETH Zurich</h3>
+                        <p class="uni-location"><i class="fas fa-map-marker-alt"></i> Zurich, Switzerland</p>
+                        <p>World-renowned for engineering, technology, and natural sciences excellence.</p>
+                        <div class="uni-tags">
+                            <span class="tag">Switzerland</span>
+                            <span class="tag tag-secondary">Technical</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            <div class="cta-box">
+                <div class="cta-content">
+                    <h3>Ready to explore thousands of universities?</h3>
+                    <p>Login to access our interactive world map and discover your perfect match</p>
+                </div>
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-large">
+                    <i class="fas fa-map-marked-alt"></i> Explore Interactive Map
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>University Counseling Hub</h4>
+                <p>Your trusted partner in international education.</p>
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                    <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
+                    <li><a href="#guidance">Services</a></li>
+                    <li><a href="#universities">Universities</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">FAQs</a></li>
+                    <li><a href="#">Scholarships</a></li>
+                    <li><a href="#">Visa Guide</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> info@unicounsel.com</li>
+                    <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                    <li><i class="fas fa-map-marker-alt"></i> Global Offices</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 University Counseling Hub. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+</html>

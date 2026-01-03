@@ -1,0 +1,367 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Resume Builder - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">Resume Builder</h1>
+        <p class="text-muted">Create a professional, ATS-friendly resume in minutes</p>
+    </div>
+    
+    <!-- Template Selection -->
+    <div id="template-section" class="card">
+        <h2 class="text-2xl font-bold mb-6">Choose Your Template</h2>
+        <div id="templates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary mb-4"></i>
+                <p class="text-muted">Loading templates...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Resume Form -->
+    <div id="resume-form-section" class="hidden">
+        <div class="card">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Build Your Resume</h2>
+                <button id="back-to-templates" class="px-4 py-2 border border-border rounded-lg hover:bg-primary/10">
+                    <i class="fas fa-arrow-left mr-2"></i>Change Template
+                </button>
+            </div>
+            
+            <form id="resume-form" class="space-y-8">
+                <!-- Personal Information -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-semibold border-b border-border pb-2">Personal Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Full Name *</label>
+                            <input type="text" name="full_name" required class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Email *</label>
+                            <input type="email" name="email" required class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Phone</label>
+                            <input type="tel" name="phone" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Location</label>
+                            <input type="text" name="location" placeholder="City, Country" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Professional Summary</label>
+                        <textarea name="summary" rows="4" placeholder="Brief overview of your experience and skills..." class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Education -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-semibold border-b border-border pb-2">Education</h3>
+                    <div id="education-list"></div>
+                    <button type="button" onclick="addEducation()" class="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10">
+                        <i class="fas fa-plus mr-2"></i>Add Education
+                    </button>
+                </div>
+                
+                <!-- Experience -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-semibold border-b border-border pb-2">Work Experience</h3>
+                    <div id="experience-list"></div>
+                    <button type="button" onclick="addExperience()" class="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10">
+                        <i class="fas fa-plus mr-2"></i>Add Experience
+                    </button>
+                </div>
+                
+                <!-- Skills -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-semibold border-b border-border pb-2">Skills</h3>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Add your skills (comma-separated)</label>
+                        <input type="text" name="skills" placeholder="Python, JavaScript, Project Management, etc." class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                    </div>
+                </div>
+                
+                <!-- Submit -->
+                <div class="flex gap-4">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save mr-2"></i>Save Resume
+                    </button>
+                    <button type="button" id="preview-btn" class="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10">
+                        <i class="fas fa-eye mr-2"></i>Preview
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+        <div class="bg-card rounded-lg p-8 max-w-4xl max-h-[90vh] overflow-y-auto relative" style="background-color: #1a1f35;">
+            <button onclick="closePreview()" class="absolute top-4 right-4 text-2xl hover:text-primary">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="preview-content" class="prose prose-invert max-w-none"></div>
+            <div class="mt-6 flex gap-4">
+                <button onclick="downloadPDF()" class="btn-primary">
+                    <i class="fas fa-download mr-2"></i>Download PDF
+                </button>
+                <button onclick="closePreview()" class="px-6 py-3 border border-border rounded-lg hover:bg-primary/10">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedTemplate = null;
+let educationCount = 0;
+let experienceCount = 0;
+
+async function loadTemplates() {
+    try {
+        const response = await fetch('/api/resume/templates');
+        const data = await response.json();
+        
+        const grid = document.getElementById('templates-grid');
+        grid.innerHTML = data.templates.map(t => `
+            <div class="card glow-border cursor-pointer hover:scale-105 transition-transform" onclick="selectTemplate(${t.id}, '${t.name}')">
+                <div class="h-48 bg-${t.color_scheme}-500/10 rounded-lg mb-4 flex items-center justify-center">
+                    <i class="fas fa-file-alt text-6xl text-${t.color_scheme}-500"></i>
+                </div>
+                <h3 class="font-semibold mb-2">${t.name}</h3>
+                <p class="text-sm text-muted">${t.description}</p>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading templates:', error);
+    }
+}
+
+function selectTemplate(id, name) {
+    selectedTemplate = {id, name};
+    document.getElementById('template-section').classList.add('hidden');
+    document.getElementById('resume-form-section').classList.remove('hidden');
+    addEducation();
+    addExperience();
+}
+
+function addEducation() {
+    educationCount++;
+    const list = document.getElementById('education-list');
+    const div = document.createElement('div');
+    div.className = 'card mb-4';
+    div.innerHTML = `
+        <div class="flex justify-between items-start mb-4">
+            <h4 class="font-semibold">Education #${educationCount}</h4>
+            <button type="button" onclick="this.closest('.card').remove()" class="text-red-500 hover:text-red-400">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Degree</label>
+                <input type="text" name="edu_degree[]" placeholder="Bachelor of Science" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Institution</label>
+                <input type="text" name="edu_institution[]" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Year</label>
+                <input type="text" name="edu_year[]" placeholder="2020-2024" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">GPA/Grade</label>
+                <input type="text" name="edu_gpa[]" placeholder="3.8/4.0" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+        </div>
+    `;
+    list.appendChild(div);
+}
+
+function addExperience() {
+    experienceCount++;
+    const list = document.getElementById('experience-list');
+    const div = document.createElement('div');
+    div.className = 'card mb-4';
+    div.innerHTML = `
+        <div class="flex justify-between items-start mb-4">
+            <h4 class="font-semibold">Experience #${experienceCount}</h4>
+            <button type="button" onclick="this.closest('.card').remove()" class="text-red-500 hover:text-red-400">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Job Title</label>
+                <input type="text" name="exp_title[]" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Company</label>
+                <input type="text" name="exp_company[]" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Duration</label>
+                <input type="text" name="exp_duration[]" placeholder="Jan 2022 - Present" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;">
+            </div>
+        </div>
+        <div class="mt-4">
+            <label class="block text-sm font-medium mb-2">Responsibilities & Achievements</label>
+            <textarea name="exp_description[]" rows="3" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #0d1117; color: #ffffff;"></textarea>
+        </div>
+    `;
+    list.appendChild(div);
+}
+
+document.getElementById('resume-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const resumeData = {
+        template_id: selectedTemplate.id,
+        personal: {
+            full_name: formData.get('full_name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            location: formData.get('location'),
+            summary: formData.get('summary')
+        },
+        education: [],
+        experience: [],
+        skills: formData.get('skills')?.split(',').map(s => s.trim()).filter(s => s)
+    };
+    
+    // Collect education
+    const eduDegrees = formData.getAll('edu_degree[]');
+    eduDegrees.forEach((degree, i) => {
+        if (degree) {
+            resumeData.education.push({
+                degree,
+                institution: formData.getAll('edu_institution[]')[i],
+                year: formData.getAll('edu_year[]')[i],
+                gpa: formData.getAll('edu_gpa[]')[i]
+            });
+        }
+    });
+    
+    // Collect experience
+    const expTitles = formData.getAll('exp_title[]');
+    expTitles.forEach((title, i) => {
+        if (title) {
+            resumeData.experience.push({
+                title,
+                company: formData.getAll('exp_company[]')[i],
+                duration: formData.getAll('exp_duration[]')[i],
+                description: formData.getAll('exp_description[]')[i]
+            });
+        }
+    });
+    
+    try {
+        const response = await fetch('/api/resume/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                template_id: selectedTemplate.id,
+                resume_data: resumeData,
+                resume_title: `${resumeData.personal.full_name} Resume`
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showToast('Resume saved successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Error saving resume:', error);
+        showToast('Failed to save resume', 'error');
+    }
+});
+
+document.getElementById('preview-btn').addEventListener('click', function() {
+    document.getElementById('preview-modal').classList.remove('hidden');
+    generatePreview();
+});
+
+function generatePreview() {
+    const formData = new FormData(document.getElementById('resume-form'));
+    const content = document.getElementById('preview-content');
+    
+    content.innerHTML = `
+        <div class="bg-white text-black p-8 rounded-lg">
+            <div class="text-center mb-6">
+                <h1 class="text-4xl font-bold mb-2">${formData.get('full_name') || 'Your Name'}</h1>
+                <p class="text-gray-600">${formData.get('email')} | ${formData.get('phone')} | ${formData.get('location')}</p>
+            </div>
+            
+            ${formData.get('summary') ? `
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-3">Professional Summary</h2>
+                <p class="text-gray-700">${formData.get('summary')}</p>
+            </div>
+            ` : ''}
+            
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-3">Education</h2>
+                ${formData.getAll('edu_degree[]').map((deg, i) => deg ? `
+                    <div class="mb-3">
+                        <h3 class="font-semibold text-lg">${deg}</h3>
+                        <p class="text-gray-700">${formData.getAll('edu_institution[]')[i]}</p>
+                        <p class="text-gray-600">${formData.getAll('edu_year[]')[i]} | GPA: ${formData.getAll('edu_gpa[]')[i]}</p>
+                    </div>
+                ` : '').join('')}
+            </div>
+            
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-3">Experience</h2>
+                ${formData.getAll('exp_title[]').map((title, i) => title ? `
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-lg">${title}</h3>
+                        <p class="text-gray-700">${formData.getAll('exp_company[]')[i]} | ${formData.getAll('exp_duration[]')[i]}</p>
+                        <p class="text-gray-600 mt-1">${formData.getAll('exp_description[]')[i]}</p>
+                    </div>
+                ` : '').join('')}
+            </div>
+            
+            ${formData.get('skills') ? `
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-3">Skills</h2>
+                <div class="flex flex-wrap gap-2">
+                    ${formData.get('skills').split(',').map(skill => `
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${skill.trim()}</span>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function closePreview() {
+    document.getElementById('preview-modal').classList.add('hidden');
+}
+
+function downloadPDF() {
+    showToast('PDF download feature coming soon!', 'info');
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : type === 'info' ? 'bg-blue-500' : 'bg-red-500'} shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+document.getElementById('back-to-templates').addEventListener('click', function() {
+    document.getElementById('resume-form-section').classList.add('hidden');
+    document.getElementById('template-section').classList.remove('hidden');
+});
+
+loadTemplates();
+</script>
+{% endblock %}

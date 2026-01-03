@@ -1,0 +1,213 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}My Profile - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<style>
+    .profile-header { position: relative; overflow: hidden; padding: 3rem 2rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 16px; }
+    .profile-header::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(100, 200, 255, 0.05) 0%, transparent 70%); animation: pulse 4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
+    .avatar-ring { position: relative; width: 120px; height: 120px; margin-right: 2rem; }
+    .avatar-circle { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #64c8ff, #34d399); display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; box-shadow: 0 8px 32px rgba(100, 200, 255, 0.3); }
+    .avatar-ring::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; border-top-color: #64c8ff; border-right-color: #34d399; animation: spin 3s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .profile-info { flex: 1; }
+    .profile-username { font-size: 1.875rem; font-weight: bold; background: linear-gradient(135deg, #64c8ff, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.25rem; }
+    .profile-email { color: #999; font-size: 1rem; }
+    .profile-status { display: inline-block; padding: 0.5rem 1rem; background: rgba(52, 211, 153, 0.2); border: 1px solid #34d399; border-radius: 20px; color: #34d399; font-size: 0.875rem; margin-top: 0.75rem; }
+    .form-group { position: relative; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.75rem; background: linear-gradient(135deg, #64c8ff, #999); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .form-input { width: 100%; padding: 0.875rem 1rem; border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 8px; font-size: 1rem; transition: all 0.3s; }
+    .form-input { background-color: #0d1117; color: #ffffff; }
+    .form-input:focus { outline: none; border-color: #64c8ff; box-shadow: 0 0 16px rgba(100, 200, 255, 0.2); background-color: #1a1f35; }
+    .form-input:disabled { opacity: 0.6; cursor: not-allowed; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .section-card { padding: 2rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.08), rgba(52, 211, 153, 0.04)); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 12px; margin-bottom: 2rem; transition: all 0.3s; }
+    .section-card:hover { border-color: rgba(100, 200, 255, 0.4); box-shadow: 0 8px 24px rgba(100, 200, 255, 0.1); }
+    .section-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; display: flex; align-items: center; }
+    .section-title i { color: #64c8ff; margin-right: 0.75rem; font-size: 1.25rem; }
+    .btn-save { padding: 0.875rem 2rem; background: linear-gradient(135deg, #64c8ff, #34d399); border: none; border-radius: 8px; color: #1a1f35; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(100, 200, 255, 0.3); }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .stat-item { padding: 1.5rem; background: rgba(100, 200, 255, 0.05); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 8px; text-align: center; }
+    .stat-number { font-size: 1.75rem; font-weight: bold; color: #64c8ff; }
+    .stat-label { font-size: 0.875rem; color: #999; margin-top: 0.5rem; }
+</style>
+
+<div class="space-y-8">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="flex items-center relative z-10">
+            <div class="avatar-ring">
+                <div class="avatar-circle">
+                    {{ user.username[0]|upper if user else 'S' }}
+                </div>
+            </div>
+            <div class="profile-info">
+                <div class="profile-username">{{ user.username if user else 'Student' }}</div>
+                <div class="profile-email">{{ user.email if user else 'student@example.com' }}</div>
+                <div class="profile-status"><i class="fas fa-circle text-green-400 mr-2" style="font-size: 0.5rem;"></i>Active</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="card">
+        <h2 class="section-title">
+            <i class="fas fa-chart-line"></i>Your Progress
+        </h2>
+        <div class="stats-row" id="statsContainer">
+            <div class="stat-item">
+                <div class="stat-number" id="perfectMatches">-</div>
+                <div class="stat-label">Perfect Matches</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="savedUniversities">-</div>
+                <div class="stat-label">Saved Universities</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="scholarshipsFound">-</div>
+                <div class="stat-label">Scholarships Found</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="profileComplete">-</div>
+                <div class="stat-label">Profile Complete</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Information Section -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <i class="fas fa-user-circle"></i>Profile Information
+        </h2>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" value="{{ user.username if user else 'Student' }}" 
+                       class="form-input" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" value="{{ user.email if user else 'student@example.com' }}" 
+                       class="form-input" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" value="{{ user.first_name if user and user.first_name else '' }}" 
+                       class="form-input" placeholder="Enter your first name" style="background-color: #1a1f35;">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" value="{{ user.last_name if user and user.last_name else '' }}" 
+                       class="form-input" placeholder="Enter your last name" style="background-color: #1a1f35;">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Country of Study</label>
+                <select class="form-input" style="background-color: #1a1f35;">
+                    <option value="">Select a country...</option>
+                    <option value="australia">Australia</option>
+                    <option value="canada">Canada</option>
+                    <option value="usa">USA</option>
+                    <option value="uk">UK</option>
+                    <option value="ethiopia">Ethiopia</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Field of Study</label>
+                <select class="form-input" style="background-color: #1a1f35;">
+                    <option value="">Select a field...</option>
+                    <option value="cs">Computer Science</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="business">Business</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="science">Science</option>
+                </select>
+            </div>
+        </div>
+        
+        <button class="btn-save">
+            <i class="fas fa-save mr-2"></i>Save Changes
+        </button>
+    </div>
+    
+    <!-- Additional Information -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <i class="fas fa-info-circle"></i>Additional Information
+        </h2>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" placeholder="+1 (555) 123-4567" class="form-input" style="background-color: #1a1f35;">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" class="form-input" style="background-color: #1a1f35;">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Preferred Language</label>
+                <select class="form-input" style="background-color: #1a1f35;">
+                    <option value="english">English</option>
+                    <option value="amharic">Amharic</option>
+                    <option value="french">French</option>
+                    <option value="spanish">Spanish</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Time Zone</label>
+                <select class="form-input" style="background-color: #1a1f35;">
+                    <option value="">Select timezone...</option>
+                    <option value="utc">UTC</option>
+                    <option value="aest">AEST (Australia)</option>
+                    <option value="eatt">EAT (Ethiopia)</option>
+                    <option value="est">EST (USA)</option>
+                </select>
+            </div>
+        </div>
+        
+        <button class="btn-save">
+            <i class="fas fa-save mr-2"></i>Update Information
+        </button>
+    </div>
+</div>
+
+<script>
+    // Fetch real statistics from API
+    async function loadProfileStats() {
+        try {
+            const response = await fetch('/api/profile/stats');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            // Update statistics
+            document.getElementById('perfectMatches').textContent = data.perfect_matches || 0;
+            document.getElementById('savedUniversities').textContent = data.saved_universities || 0;
+            document.getElementById('scholarshipsFound').textContent = data.scholarships_found || 0;
+            document.getElementById('profileComplete').textContent = (data.profile_complete || 0) + '%';
+        } catch (error) {
+            console.error('Error loading profile stats:', error);
+            // Show default values if error
+            document.getElementById('perfectMatches').textContent = '0';
+            document.getElementById('savedUniversities').textContent = '0';
+            document.getElementById('scholarshipsFound').textContent = '0';
+            document.getElementById('profileComplete').textContent = '0%';
+        }
+    }
+    
+    // Load stats when page loads
+    window.addEventListener('load', loadProfileStats);
+</script>
+{% endblock %}

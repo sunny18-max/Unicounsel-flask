@@ -1,0 +1,178 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Visa Probability - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">Visa Probability Calculator</h1>
+        <p class="text-muted">Assess your visa approval chances based on your profile</p>
+    </div>
+    
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-6">Calculate Your Visa Probability</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium mb-2">Target Country</label>
+                <select id="country" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                    <option value="">Select Country</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Visa Type</label>
+                <select id="visa-type" class="w-full bg-background border border-border rounded-lg px-4 py-3" style="background-color: #1a1f35; color: #ffffff;">
+                    <option value="Student">Student Visa</option>
+                    <option value="Work">Work Visa</option>
+                    <option value="PR">Permanent Residence</option>
+                </select>
+            </div>
+        </div>
+        
+        <button id="calculate-btn" class="btn-primary mt-6">
+            <i class="fas fa-calculator mr-2"></i>
+            Calculate Probability
+        </button>
+        
+        <!-- Results -->
+        <div id="result" class="mt-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Probability Score -->
+                <div class="card glow-border text-center">
+                    <h3 class="text-lg font-semibold mb-4">Visa Approval Probability</h3>
+                    <div class="relative inline-flex items-center justify-center mb-4">
+                        <svg class="transform -rotate-90 w-32 h-32">
+                            <circle cx="64" cy="64" r="56" stroke="currentColor" stroke-width="8" fill="transparent" class="text-gray-700"></circle>
+                            <circle id="progress-circle" cx="64" cy="64" r="56" stroke="currentColor" stroke-width="8" fill="transparent" class="text-primary" style="stroke-dasharray: 352; stroke-dashoffset: 352;"></circle>
+                        </svg>
+                        <span id="score-text" class="absolute text-4xl font-bold">0%</span>
+                    </div>
+                    <p id="status-text" class="text-xl font-semibold mb-2">-</p>
+                    <p class="text-sm text-muted">Based on your profile analysis</p>
+                </div>
+                
+                <!-- Factors Analysis -->
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-4">Contributing Factors</h3>
+                    <div id="factors-list" class="space-y-3">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recommendations -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold mb-4"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Recommendations</h3>
+                <ul id="recommendations-list" class="space-y-2">
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadCountries() {
+    try {
+        const res = await fetch('/api/filters');
+        const data = await res.json();
+        const select = document.getElementById('country');
+        (data.countries || []).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            select.appendChild(opt);
+        });
+    } catch(err) {
+        console.error('Failed to load countries:', err);
+    }
+}
+
+async function calculateProbability() {
+    const country = document.getElementById('country').value;
+    const visaType = document.getElementById('visa-type').value;
+    
+    if (!country) {
+        showToast('Please select a target country', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/visa-probability', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({country, visa_type: visaType})
+        });
+        
+        const data = await response.json();
+        displayResults(data);
+    } catch (error) {
+        console.error('Error calculating visa probability:', error);
+        showToast('Failed to calculate probability', 'error');
+    }
+}
+
+function displayResults(data) {
+    document.getElementById('result').classList.remove('hidden');
+    
+    // Animate score
+    const scoreText = document.getElementById('score-text');
+    const statusText = document.getElementById('status-text');
+    const progressCircle = document.getElementById('progress-circle');
+    
+    let current = 0;
+    const target = data.score;
+    const duration = 1500;
+    const increment = target / (duration / 16);
+    
+    const animation = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            current = target;
+            clearInterval(animation);
+        }
+        scoreText.textContent = Math.round(current) + '%';
+        const circumference = 2 * Math.PI * 56;
+        const offset = circumference - (current / 100 * circumference);
+        progressCircle.style.strokeDashoffset = offset;
+    }, 16);
+    
+    // Set status with color
+    statusText.textContent = data.status;
+    statusText.className = `text-xl font-semibold mb-2 text-${data.status_color}-500`;
+    
+    // Display factors
+    const factorsList = document.getElementById('factors-list');
+    factorsList.innerHTML = data.factors.map(f => `
+        <div class="flex items-start gap-3 p-3 bg-background rounded-lg">
+            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+            <div class="flex-1">
+                <p class="font-medium">${f.factor}</p>
+                <p class="text-sm text-primary">${f.impact}</p>
+            </div>
+        </div>
+    `).join('');
+    
+    // Display recommendations
+    const recList = document.getElementById('recommendations-list');
+    recList.innerHTML = data.recommendations.map(r => `
+        <li class="flex items-start gap-3">
+            <i class="fas fa-arrow-right text-primary mt-1"></i>
+            <span>${r}</span>
+        </li>
+    `).join('');
+    
+    // Scroll to results
+    document.getElementById('result').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+document.getElementById('calculate-btn').addEventListener('click', calculateProbability);
+loadCountries();
+</script>
+{% endblock %}

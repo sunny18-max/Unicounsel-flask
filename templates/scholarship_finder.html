@@ -1,0 +1,281 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}Scholarship Finder - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<style>
+    .scholarship-card { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden; }
+    .scholarship-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(100, 200, 255, 0.1), transparent); transition: left 0.5s; }
+    .scholarship-card:hover::before { left: 100%; }
+    .scholarship-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 32px rgba(100, 200, 255, 0.2); }
+    .award-badge { display: inline-block; padding: 0.5rem 1rem; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 20px; color: #1a1f35; font-weight: bold; font-size: 0.875rem; }
+    .deadline-badge { display: inline-block; padding: 0.5rem 0.75rem; background: rgba(251, 146, 60, 0.2); color: #fb923c; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+    .eligibility-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .eligibility-item { padding: 1rem; background: rgba(100, 200, 255, 0.05); border-left: 3px solid #64c8ff; border-radius: 4px; font-size: 0.875rem; }
+    .filter-section { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+    .filter-btn { padding: 0.5rem 1.25rem; border: 2px solid rgba(100, 200, 255, 0.3); border-radius: 20px; background: transparent; color: #64c8ff; cursor: pointer; transition: all 0.3s; }
+    .filter-btn:hover, .filter-btn.active { border-color: #64c8ff; background: rgba(100, 200, 255, 0.1); }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .stat-box { padding: 1.5rem; background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(52, 211, 153, 0.05)); border: 1px solid rgba(100, 200, 255, 0.2); border-radius: 8px; text-align: center; }
+    .stat-number { font-size: 1.75rem; font-weight: bold; color: #64c8ff; }
+    .stat-label { font-size: 0.875rem; color: #999; margin-top: 0.5rem; }
+</style>
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">
+            <i class="fas fa-graduation-cap mr-3 text-primary"></i>Scholarship Finder
+        </h1>
+        <p class="text-muted">Discover funding opportunities tailored to your profile</p>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-number" id="total-scholarships">0</div>
+            <div class="stat-label">Scholarships Found</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" id="total-value">$0M</div>
+            <div class="stat-label">Total Funding Available</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" id="avg-award">$0K</div>
+            <div class="stat-label">Average Award</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" id="success-rate">75%</div>
+            <div class="stat-label">Average Success Rate</div>
+        </div>
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="card">
+        <h2 class="text-xl font-bold mb-4">Filter Scholarships</h2>
+        <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">All Scholarships</button>
+            <button class="filter-btn" data-filter="merit">Merit-Based</button>
+            <button class="filter-btn" data-filter="need">Need-Based</button>
+            <button class="filter-btn" data-filter="country">Country-Specific</button>
+            <button class="filter-btn" data-filter="subject">Subject-Specific</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Search Scholarships</label>
+                <input type="text" id="searchInput" placeholder="e.g., STEM, Australia, Full tuition..." 
+                    class="w-full border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Award Amount (Minimum)</label>
+                <input type="number" id="minAward" placeholder="e.g., 10000" 
+                    class="w-full border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Country</label>
+                <select id="countryFilter" class="w-full border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+                    <option value="">All Countries</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scholarships Grid -->
+    <div>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold">
+                <i class="fas fa-list mr-2"></i>Available Scholarships
+            </h2>
+            <select id="sortBy" class="border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary" style="background-color: #1a1f35;">
+                <option value="recent">Most Recent</option>
+                <option value="amount">Highest Award</option>
+                <option value="deadline">Closest Deadline</option>
+                <option value="success">Highest Success Rate</option>
+            </select>
+        </div>
+        
+        <div id="scholarships-list" class="space-y-4">
+            <div class="text-center py-12" id="scholarships-loading">
+                <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+                <p class="text-muted">Loading scholarships...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- No Results Message -->
+    <div id="noResults" style="display: none;">
+        <div class="card">
+            <div class="text-center py-12">
+                <i class="fas fa-search text-4xl text-muted mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">No Scholarships Found</h3>
+                <p class="text-muted">Try adjusting your filters to see more results</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allScholarships = [];
+    let currentFilter = 'all';
+    
+    // Scholarship data templates
+    const scholarshipTemplates = [
+        { name: 'Merit Excellence Award', type: 'merit', amount: 25000, deadline: '2024-06-30', success: 45, description: 'For outstanding academic achievement', icon: 'fas fa-star' },
+        { name: 'Global Leaders Scholarship', type: 'merit', amount: 30000, deadline: '2024-07-15', success: 35, description: 'Leadership and community service', icon: 'fas fa-crown' },
+        { name: 'STEM Excellence Grant', type: 'subject', amount: 20000, deadline: '2024-08-01', success: 55, description: 'For Science, Technology, Engineering & Math', icon: 'fas fa-flask' },
+        { name: 'International Student Fund', type: 'country', amount: 15000, deadline: '2024-05-30', success: 50, description: 'Dedicated to international students', icon: 'fas fa-globe' },
+        { name: 'Financial Need Assistance', type: 'need', amount: 18000, deadline: '2024-09-30', success: 60, description: 'For students with demonstrated financial need', icon: 'fas fa-hand-holding-heart' },
+        { name: 'Women in Tech Scholarship', type: 'subject', amount: 22000, deadline: '2024-07-01', success: 48, description: 'Supporting women in technology fields', icon: 'fas fa-female' },
+        { name: 'Diversity & Inclusion Award', type: 'merit', amount: 20000, deadline: '2024-08-15', success: 52, description: 'Celebrating diversity in higher education', icon: 'fas fa-people-group' },
+        { name: 'Research Excellence Fund', type: 'subject', amount: 35000, deadline: '2024-06-15', success: 40, description: 'For innovative research projects', icon: 'fas fa-microscope' },
+        { name: 'Community Service Grant', type: 'merit', amount: 12000, deadline: '2024-10-01', success: 58, description: 'Recognizing community contribution', icon: 'fas fa-heart' },
+        { name: 'First Generation Award', type: 'merit', amount: 16000, deadline: '2024-07-30', success: 62, description: 'For first-generation university students', icon: 'fas fa-book' }
+    ];
+    
+    async function loadScholarships() {
+        try {
+            // Fetch from API
+            const res = await fetch('/api/scholarships');
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            
+            // Use real scholarships from API, enriched with template data
+            allScholarships = (data.scholarships || []).map((s, i) => {
+                const template = scholarshipTemplates[i % scholarshipTemplates.length];
+                return {
+                    name: s.text || template.name,
+                    type: template.type,
+                    amount: template.amount,
+                    deadline: template.deadline,
+                    success: template.success,
+                    description: template.description,
+                    icon: template.icon,
+                    country: s.country,
+                    text: s.text,
+                    count: s.count
+                };
+            });
+            
+            // If no scholarships found, use templates
+            if (allScholarships.length === 0) {
+                allScholarships = scholarshipTemplates;
+            }
+        } catch (err) {
+            console.error('Error loading scholarships:', err);
+            // Fall back to templates
+            allScholarships = scholarshipTemplates;
+        }
+        
+        // Load countries
+        const countries = new Set(allScholarships.map(s => s.country).filter(Boolean));
+        const countrySelect = document.getElementById('countryFilter');
+        countries.forEach(country => {
+            if (country) {
+                const opt = document.createElement('option');
+                opt.value = country;
+                opt.textContent = country;
+                countrySelect.appendChild(opt);
+            }
+        });
+        
+        updateStats();
+        renderScholarships();
+    }
+    
+    function updateStats() {
+        document.getElementById('total-scholarships').textContent = allScholarships.length;
+        const totalValue = allScholarships.reduce((sum, s) => sum + (s.amount || 0), 0);
+        document.getElementById('total-value').textContent = '$' + (totalValue / 1000000).toFixed(1) + 'M';
+        const avgAward = Math.round(totalValue / allScholarships.length / 1000);
+        document.getElementById('avg-award').textContent = '$' + avgAward + 'K';
+    }
+    
+    function renderScholarships() {
+        const container = document.getElementById('scholarships-list');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const minAward = parseInt(document.getElementById('minAward').value) || 0;
+        const countryFilter = document.getElementById('countryFilter').value;
+        const sortBy = document.getElementById('sortBy').value;
+        
+        let filtered = allScholarships.filter(s => {
+            const matchesFilter = currentFilter === 'all' || s.type === currentFilter;
+            const matchesSearch = !search || 
+                s.name.toLowerCase().includes(search) || 
+                (s.text && s.text.toLowerCase().includes(search)) ||
+                (s.description && s.description.toLowerCase().includes(search));
+            const matchesAmount = !s.amount || s.amount >= minAward;
+            const matchesCountry = !countryFilter || !s.country || s.country === countryFilter;
+            return matchesFilter && matchesSearch && matchesAmount && matchesCountry;
+        });
+        
+        // Sort
+        if (sortBy === 'amount') filtered.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+        else if (sortBy === 'deadline') filtered.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        else if (sortBy === 'success') filtered.sort((a, b) => (b.success || 0) - (a.success || 0));
+        
+        if (filtered.length === 0) {
+            container.style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
+            return;
+        }
+        
+        container.style.display = 'block';
+        document.getElementById('noResults').style.display = 'none';
+        
+        container.innerHTML = filtered.map(s => `
+            <div class="scholarship-card card glow-border">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-start space-x-4 flex-1">
+                        <div class="w-12 h-12 flex items-center justify-center bg-primary/20 rounded-lg">
+                            <i class="${s.icon || 'fas fa-certificate'} text-primary text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold mb-2">${s.name}</h3>
+                            <p class="text-sm text-muted mb-3">${s.description}</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="award-badge">$${s.amount?.toLocaleString() || '0'}</span>
+                                <span class="deadline-badge"><i class="fas fa-clock mr-1"></i>${s.deadline ? 'Deadline: ' + s.deadline : 'Open'}</span>
+                                <span class="text-xs px-3 py-1 bg-rgba(100,200,255,0.1) text-primary rounded-full">${s.type}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-all whitespace-nowrap">Apply Now</button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                    <div>
+                        <div class="text-xs text-muted mb-1">Success Rate</div>
+                        <div class="font-bold">${s.success || 50}%</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-muted mb-1">Award Type</div>
+                        <div class="font-bold capitalize">${s.type}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-muted mb-1">Difficulty</div>
+                        <div class="font-bold">${s.success && s.success > 50 ? 'Moderate' : 'Competitive'}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', renderScholarships);
+    document.getElementById('minAward').addEventListener('input', renderScholarships);
+    document.getElementById('countryFilter').addEventListener('change', renderScholarships);
+    document.getElementById('sortBy').addEventListener('change', renderScholarships);
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.dataset.filter;
+            renderScholarships();
+        });
+    });
+    
+    window.addEventListener('load', loadScholarships);
+</script>
+{% endblock %}

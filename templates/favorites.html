@@ -1,0 +1,126 @@
+{% extends "dashboard_updated.html" %}
+
+{% block title %}My Favorites - UniCounsel{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-8">
+    <div>
+        <h1 class="text-4xl font-bold mb-2">My Favorites</h1>
+        <p class="text-muted">Universities you've saved for later</p>
+    </div>
+    
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-6">Saved Universities</h2>
+        
+        <div id="favorites-container">
+            <div class="text-center py-12">
+                <i class="fas fa-heart text-6xl text-muted mb-4"></i>
+                <p class="text-muted mb-4">You haven't saved any universities yet</p>
+                <a href="/perfect-matches" class="btn-primary inline-block">
+                    <i class="fas fa-star mr-2"></i>
+                    Explore Matches
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load favorites from API
+async function loadFavorites() {
+    try {
+        const response = await fetch('/api/favorites');
+        const data = await response.json();
+        
+        const container = document.getElementById('favorites-container');
+        
+        if (data.favorites && data.favorites.length > 0) {
+            container.innerHTML = data.favorites.map(match => `
+                <div class="card glow-border mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold mb-2">${match.name}</h3>
+                            <p class="text-sm text-muted mb-3">
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                ${match.city}, ${match.country}
+                            </p>
+                            ${match.course ? `<p class="text-sm text-muted mb-3">${match.course}</p>` : ''}
+                            <p class="text-primary font-semibold">
+                                $${match.total_cost ? match.total_cost.toLocaleString() : 'N/A'} /year
+                            </p>
+                            ${match.scholarships ? '<p class="text-sm text-yellow-500 mt-2"><i class="fas fa-award mr-1"></i>Scholarships Available</p>' : ''}
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <button onclick="removeFavorite('${match.id}')" class="p-3 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors">
+                                <i class="fas fa-heart-broken"></i>
+                            </button>
+                            ${match.website ? `<a href="${match.website}" target="_blank" class="btn-primary text-sm text-center">Visit</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-heart text-6xl text-muted mb-4"></i>
+                    <p class="text-muted mb-4">You haven't saved any universities yet</p>
+                    <a href="/perfect-matches" class="btn-primary inline-block">
+                        <i class="fas fa-star mr-2"></i>
+                        Explore Matches
+                    </a>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading favorites:', error);
+        const container = document.getElementById('favorites-container');
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                <p class="text-muted">Failed to load favorites. Please try refreshing the page.</p>
+            </div>
+        `;
+    }
+}
+
+async function removeFavorite(id) {
+    try {
+        const response = await fetch(`/api/matches/${id}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reload favorites to update the UI
+            loadFavorites();
+            
+            // Show feedback
+            showToast('Removed from favorites', 'success');
+        } else {
+            showToast('Failed to remove favorite', 'error');
+        }
+    } catch (error) {
+        console.error('Error removing favorite:', error);
+        showToast('Error removing favorite', 'error');
+    }
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+loadFavorites();
+</script>
+{% endblock %}
