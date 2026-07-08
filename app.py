@@ -6,11 +6,11 @@ except Exception as e:
     pass
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 import os
 import json
-import hashlib
 import re
-import secrets
 from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
@@ -18,8 +18,19 @@ from authlib.integrations.flask_client import OAuth
 from db_config import get_db_connection, create_database, create_tables
 from csv_data_service import csv_service
 
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(32)
+
+FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
+if not FLASK_SECRET_KEY:
+    raise RuntimeError(
+        'FLASK_SECRET_KEY is not set. Generate one with '
+        '`python -c "import secrets; print(secrets.token_hex(32))"` and set it as an '
+        'environment variable — a random key generated at import time would silently '
+        'invalidate every session on every restart.'
+    )
+app.secret_key = FLASK_SECRET_KEY
 
 # Session configuration to prevent data leakage
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -27,9 +38,11 @@ app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
-# Google OAuth configuration
-app.config['GOOGLE_CLIENT_ID'] = '1073684776924-jne5g1aprbrdb4qqc9mj3lhjqalcndd9.apps.googleusercontent.com'
-app.config['GOOGLE_CLIENT_SECRET'] = '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'
+# Google OAuth configuration — loaded from environment, never hardcoded.
+app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '')
+app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+if not app.config['GOOGLE_CLIENT_ID'] or not app.config['GOOGLE_CLIENT_SECRET']:
+    print("Warning: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set — Google sign-in will not work.")
 
 oauth = OAuth(app)
 google = oauth.register(
@@ -62,12 +75,16 @@ with app.app_context():
         print("App will use CSV fallback for data operations.")
 
 def hash_password(password):
-    """Hash password using SHA-256"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Salted, slow hash (Werkzeug's scrypt-backed PBKDF2) — SHA-256 alone is
+    fast-by-design and crackable at billions of guesses/sec on a GPU, which is
+    exactly wrong for password storage."""
+    return generate_password_hash(password)
 
 def verify_password(password, hash):
-    """Verify password against hash"""
-    return hash_password(password) == hash
+    """Verify password against hash. Existing accounts with an old raw
+    SHA-256 hash (64 hex chars, no algorithm prefix) won't match — this is
+    intentional, not a bug: those hashes were never safe to keep honoring."""
+    return check_password_hash(hash, password)
 
 # Add response headers to prevent caching of user-specific pages
 @app.after_request
